@@ -1,0 +1,93 @@
+QWidget{
+	
+	background-color: rgb(60, 63, 65);
+}
+
+QDockWidget{
+	color: rgb(208, 208, 208);	
+	background-color: rgb(60, 63, 65);
+
+	border-color: rgb(63, 63, 70);
+	border-top-color: rgb(255, 255, 255);	
+	font: 10pt "Microsoft YaHei UI";
+}
+
+QTableWidget{	
+	background-color: rgb(43, 43, 43);	
+	border-color: rgb(63, 63, 70);
+	color: rgb(241, 241, 241);
+	alternate-background-color: rgb(85, 85, 85);
+	font: 9pt "Microsoft YaHei UI";
+}
+
+QTreeWidget{
+	background-color: rgb(43, 43, 43);	
+	border-color: rgb(63, 63, 70);
+	color: rgb(241, 241, 241);
+	alternate-background-color: rgb(85, 85, 85);
+	font: 9pt "Microsoft YaHei UI";
+}
+
+
+QHeaderView::section{
+	background-color: rgb(53, 53, 53);
+	color: rgb(241, 241, 241);
+	border:0px solid #E0DDDC;
+	border-bottom:1px solid #262626;
+	height: 30px;
+}
+
+
+QToolBar{
+	background-color: rgb(60, 63, 65);
+	border-bottom: 1px solid #262626;
+}
+
+QStatusBar{
+	color: rgb(241, 241, 241);
+	font: 9pt "Microsoft YaHei UI";
+}
+
+QMenuBar{
+	background-color: rgb(60, 63, 65);
+	color: rgb(241, 241, 241);
+	font: 9pt "Microsoft YaHei UI";
+	border-bottom: 1px solid #262626;
+}
+
+QMenuBar::item:selected{
+	background-color: rgb(75, 110, 175);
+}
+
+QMenu{
+	font: 9pt "Microsoft YaHei UI";	
+	color: rgb(241, 241, 241);
+	background-color: rgb(60, 63, 65);
+}
+
+QMenu::item:selected{
+	background-color: rgb(75, 110, 175);
+}
+
+
+QLabel{
+	color: rgb(241, 241, 241);
+	font: 10pt "Microsoft YaHei UI";
+}
+
+QCheckBox{
+	color: rgb(241, 241, 241);
+	font: 10pt "Microsoft YaHei UI";
+}
+
+QLCDNumber{
+	color: rgb(241, 241, 241);
+	font: 10pt "Microsoft YaHei UI";
+}
+
+QPushButton{
+	color: rgb(241, 241, 241);
+	
+	background-color: rgb(73, 78, 80);
+}
+

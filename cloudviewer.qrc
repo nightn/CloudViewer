@@ -1,0 +1,29 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Resources/images/open.png</file>
+        <file>Resources/images/save.png</file>
+        <file>Resources/images/change.png</file>
+        <file>Resources/images/cube.png</file>
+        <file>Resources/images/about.png</file>
+        <file>Resources/images/help.png</file>
+        <file>Resources/images/icon.png</file>
+        <file>Resources/images/exit.png</file>
+        <file>Resources/images/bgcolor.png</file>
+        <file>Resources/images/pointcolor.png</file>
+        <file>Resources/images/angle view.png</file>
+        <file>Resources/images/zhengshi.png</file>
+        <file>Resources/images/zuoshi.png</file>
+        <file>Resources/images/fushi.png</file>
+        <file>Resources/images/clear.png</file>
+        <file>Resources/images/add.png</file>
+        <file>Resources/images/shape.png</file>
+        <file>Resources/images/sphere.png</file>
+        <file>Resources/images/cylinder.png</file>
+        <file>Resources/images/mesh.png</file>
+        <file>Resources/images/frame.png</file>
+        <file>Resources/qss/Darcula.qss</file>
+        <file>Resources/qss/Windows.qss</file>
+        <file>Resources/images/language.png</file>
+        <file>Resources/images/theme.png</file>
+    </qresource>
+</RCC>
