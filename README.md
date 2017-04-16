@@ -16,34 +16,34 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
    <img  src="http://i1.piimg.com/567571/0e4eb5ab534d1a3f.png" width="750"/>
 
-   ## CloudViewer 下载及声明
+## CloudViewer 下载及声明
 
-   1. **软件下载**：[CloudViewer 下载](http://on2kkr82s.bkt.clouddn.com/CloudViewer.rar) （软件大小 23.7 MB，目前仅支持 Windows 系统)。
-   2. Github 源码：https://github.com/nightn/CloudViewer （欢迎 Star 和 Fork）
-   3. 使用手册：http://www.nightn.com/cloudviewer
-   4. 开发环境：CloudViewer 是用 Windows 10 (64 位) 系统下的 Mircosoft Visual Studio Professional 2013，结合使用 Qt 5.7.0 (64 位) 及 PCL 1.8.0 (64 位) 等开源库进行开发的。
-   5. 资源使用：软件所使用的图片资源均来源于 [www.easyicon.net](http://www.easyicon.net)。
-   6. 声明：本软件用作分享与学习，若转载请注明出处，勿作任何商业用途。
+1. **软件下载**：[CloudViewer 下载](http://on2kkr82s.bkt.clouddn.com/CloudViewer.rar) （软件大小 23.7 MB，目前仅支持 Windows 系统)。
+2. Github 源码：https://github.com/nightn/CloudViewer （欢迎 Star 和 Fork）
+3. 使用手册：http://www.nightn.com/cloudviewer
+4. 开发环境：CloudViewer 是用 Windows 10 (64 位) 系统下的 Mircosoft Visual Studio Professional 2013，结合使用 Qt 5.7.0 (64 位) 及 PCL 1.8.0 (64 位) 等开源库进行开发的。
+5. 资源使用：软件所使用的图片资源均来源于 [www.easyicon.net](http://www.easyicon.net)。
+6. 声明：本软件用作分享与学习，若转载请注明出处，勿作任何商业用途。
 
-   ## CloudViewer 使用
+## CloudViewer 使用
 
-   ### 1. 点云 IO
+### 1. 点云 IO
 
-   点云 IO 操作主要包括 `Open`, `Add`, `Save`, `Clear` 和 `Change` 等。
+点云 IO 操作主要包括 `Open`, `Add`, `Save`, `Clear` 和 `Change` 等。
 
-   #### 1.1 打开点云
+#### 1.1 打开点云
 
-   **[重要说明] 点云存放路径不能有中文字符，否则点云不能正常打开！**
+**[重要说明] 点云存放路径不能有中文字符，否则点云不能正常打开！**
 
-   点云是由很多个具有三维坐标 x, y, z 的点组成的数据格式，除了位置信息外，点云还可以包含颜色信息（点云的 RGB 值）、透明信息、法线信息等。目前常用的点云格式有 pcd, ply 以及 obj 格式。打开这三种格式的点云主要通过 Qt 库的文件对话框和 PCL 库中载入点云数据的相关 API 实现。
+点云是由很多个具有三维坐标 x, y, z 的点组成的数据格式，除了位置信息外，点云还可以包含颜色信息（点云的 RGB 值）、透明信息、法线信息等。目前常用的点云格式有 pcd, ply 以及 obj 格式。打开这三种格式的点云主要通过 Qt 库的文件对话框和 PCL 库中载入点云数据的相关 API 实现。
 
-   点云 IO 的常用操作可以在 `File` 菜单及工具栏中找到：
+点云 IO 的常用操作可以在 `File` 菜单及工具栏中找到：
 
-   <img src="http://i4.buimg.com/567571/d3f16a646b17195c.png" width="500"/>
+<img src="http://i4.buimg.com/567571/d3f16a646b17195c.png" width="500"/>
 
-   打开动作 `Open` 的实现效果如下图，支持多选进行批量打开。
+打开动作 `Open` 的实现效果如下图，支持多选进行批量打开。
 
-   <img src="http://i1.piimg.com/567571/6623341a0fca345d.png" width="650">
+<img src="http://i1.piimg.com/567571/6623341a0fca345d.png" width="650">
 
 
 #### 1.2 添加点云
