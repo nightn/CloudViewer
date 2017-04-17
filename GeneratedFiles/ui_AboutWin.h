@@ -67,7 +67,7 @@ public:
         AboutWin->setWindowTitle(QApplication::translate("AboutWin", "About CloudViewer", 0));
         label->setText(QString());
         label_2->setText(QApplication::translate("AboutWin", "<html><head/><body><p><span style=\" font-size:14pt; font-weight:600;\">CloutViewer</span></p></body></html>", 0));
-        label_3->setText(QApplication::translate("AboutWin", "<html><head/><body><p><span style=\" font-size:12pt;\">Version 1.0</span></p><p><span style=\" font-size:12pt;\">Copyright(C) 2017 </span><span style=\" font-size:12pt; font-weight:600;\">Nightn</span><span style=\" font-size:12pt;\">. </span></p><p><span style=\" font-size:12pt;\">All rights reservd. </span></p><p><br/></p><p><br/></p></body></html>", 0));
+        label_3->setText(QApplication::translate("AboutWin", "<html><head/><body><p><span style=\" font-size:12pt;\">Version 1.0.1</span></p><p><span style=\" font-size:12pt;\">Copyright(C) 2017 </span><span style=\" font-size:12pt; font-weight:600;\">Nightn</span><span style=\" font-size:12pt;\">. </span></p><p><span style=\" font-size:12pt;\">All rights reservd. </span></p><p><br/></p><p><br/></p></body></html>", 0));
     } // retranslateUi
 
 };

@@ -64,6 +64,7 @@ public:
     QAction *darculaThemeAction;
     QAction *englishAction;
     QAction *chineseAction;
+    QAction *saveBinaryAction;
     QWidget *centralWidget;
     QHBoxLayout *horizontalLayout_5;
     QVTKWidget *screen;
@@ -249,6 +250,11 @@ public:
         englishAction->setObjectName(QStringLiteral("englishAction"));
         chineseAction = new QAction(CloudViewerClass);
         chineseAction->setObjectName(QStringLiteral("chineseAction"));
+        saveBinaryAction = new QAction(CloudViewerClass);
+        saveBinaryAction->setObjectName(QStringLiteral("saveBinaryAction"));
+        QIcon icon18;
+        icon18.addFile(QStringLiteral(":/Resources/images/saveBinary.png"), QSize(), QIcon::Normal, QIcon::Off);
+        saveBinaryAction->setIcon(icon18);
         centralWidget = new QWidget(CloudViewerClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         QSizePolicy sizePolicy1(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -279,23 +285,23 @@ public:
         menuGenerate->setObjectName(QStringLiteral("menuGenerate"));
         menuBasic_shapes = new QMenu(menuGenerate);
         menuBasic_shapes->setObjectName(QStringLiteral("menuBasic_shapes"));
-        QIcon icon18;
-        icon18.addFile(QStringLiteral(":/Resources/images/shape.png"), QSize(), QIcon::Normal, QIcon::Off);
-        menuBasic_shapes->setIcon(icon18);
+        QIcon icon19;
+        icon19.addFile(QStringLiteral(":/Resources/images/shape.png"), QSize(), QIcon::Normal, QIcon::Off);
+        menuBasic_shapes->setIcon(icon19);
         menuAbout = new QMenu(menuBar);
         menuAbout->setObjectName(QStringLiteral("menuAbout"));
         menuOption = new QMenu(menuBar);
         menuOption->setObjectName(QStringLiteral("menuOption"));
         themeAction = new QMenu(menuOption);
         themeAction->setObjectName(QStringLiteral("themeAction"));
-        QIcon icon19;
-        icon19.addFile(QStringLiteral(":/Resources/images/theme.png"), QSize(), QIcon::Normal, QIcon::Off);
-        themeAction->setIcon(icon19);
+        QIcon icon20;
+        icon20.addFile(QStringLiteral(":/Resources/images/theme.png"), QSize(), QIcon::Normal, QIcon::Off);
+        themeAction->setIcon(icon20);
         langAction = new QMenu(menuOption);
         langAction->setObjectName(QStringLiteral("langAction"));
-        QIcon icon20;
-        icon20.addFile(QStringLiteral(":/Resources/images/language.png"), QSize(), QIcon::Normal, QIcon::Off);
-        langAction->setIcon(icon20);
+        QIcon icon21;
+        icon21.addFile(QStringLiteral(":/Resources/images/language.png"), QSize(), QIcon::Normal, QIcon::Off);
+        langAction->setIcon(icon21);
         menuView = new QMenu(menuBar);
         menuView->setObjectName(QStringLiteral("menuView"));
         menuAngle_view = new QMenu(menuView);
@@ -645,6 +651,7 @@ public:
         menuFile->addAction(addAction);
         menuFile->addAction(clearAction);
         menuFile->addAction(saveAction);
+        menuFile->addAction(saveBinaryAction);
         menuFile->addAction(changeAction);
         menuFile->addAction(exitAction);
         menuGenerate->addAction(cubeAction);
@@ -675,6 +682,7 @@ public:
         mainToolBar->addAction(addAction);
         mainToolBar->addAction(clearAction);
         mainToolBar->addAction(saveAction);
+        mainToolBar->addAction(saveBinaryAction);
         mainToolBar->addAction(changeAction);
         mainToolBar->addSeparator();
         mainToolBar->addAction(pointcolorAction);
@@ -748,6 +756,10 @@ public:
         darculaThemeAction->setText(QApplication::translate("CloudViewerClass", "Darcula", 0));
         englishAction->setText(QApplication::translate("CloudViewerClass", "English", 0));
         chineseAction->setText(QApplication::translate("CloudViewerClass", "Chinese", 0));
+        saveBinaryAction->setText(QApplication::translate("CloudViewerClass", "Save as binary", 0));
+#ifndef QT_NO_STATUSTIP
+        saveBinaryAction->setStatusTip(QApplication::translate("CloudViewerClass", "Save point cloud as binary file", 0));
+#endif // QT_NO_STATUSTIP
         menuFile->setTitle(QApplication::translate("CloudViewerClass", "File", 0));
         menuGenerate->setTitle(QApplication::translate("CloudViewerClass", "Generate", 0));
         menuBasic_shapes->setTitle(QApplication::translate("CloudViewerClass", "Basic shapes", 0));

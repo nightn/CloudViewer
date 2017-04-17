@@ -25,5 +25,6 @@
         <file>Resources/qss/Windows.qss</file>
         <file>Resources/images/language.png</file>
         <file>Resources/images/theme.png</file>
+        <file>Resources/images/saveBinary.png</file>
     </qresource>
 </RCC>

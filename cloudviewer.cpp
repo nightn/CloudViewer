@@ -11,6 +11,7 @@ CloudViewer::CloudViewer(QWidget *parent)
 	QObject::connect(ui.addAction, &QAction::triggered, this, &CloudViewer::add);
 	QObject::connect(ui.clearAction, &QAction::triggered, this, &CloudViewer::clear);
 	QObject::connect(ui.saveAction, &QAction::triggered, this, &CloudViewer::save);
+	QObject::connect(ui.saveBinaryAction, &QAction::triggered, this, &CloudViewer::saveBinary);
 	QObject::connect(ui.changeAction, &QAction::triggered, this, &CloudViewer::change);
 	QObject::connect(ui.exitAction, &QAction::triggered, this, &CloudViewer::exit);
 	// Display (connect)
@@ -77,7 +78,7 @@ CloudViewer::~CloudViewer()
 // Open point cloud
 void CloudViewer::open()
 {
-	QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Open point cloud file"), "E:/Date/PointCloud", tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)"));
+	QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Open point cloud file"), QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)"));
 	//Return if filenames is empty
 	if (filenames.isEmpty())
 		return;
@@ -90,6 +91,8 @@ void CloudViewer::open()
 
 	// Open point cloud one by one
 	for (int i = 0; i != filenames.size(); i++){
+		// time start
+		timeStart();
 		mycloud.cloud.reset(new PointCloudT); // Reset cloud
 		QString filename = filenames[i];
 		std::string file_name = filename.toStdString();
@@ -137,12 +140,17 @@ void CloudViewer::open()
 			return;
 		}
 		setA(255);  //设置点云为不透明
+		// 最后导入的点云的信息
 		mycloud.filename = file_name;
 		mycloud.subname = subname;
+		mycloud.dirname = file_name.substr(0, file_name.size() - subname.size());
 		mycloud_vec.push_back(mycloud);  //将点云导入点云容器
 
-		//输出窗口
-		consoleLog("Open", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "");
+		
+		// time off
+		time_cost = timeOff();
+		// 输出窗口
+		consoleLog("Open", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "Time cost: " + time_cost + " s, Points: " + QString::number(mycloud.cloud->points.size()));
 
 		//更新资源管理树
 		QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList()
@@ -150,7 +158,7 @@ void CloudViewer::open()
 		cloudName->setIcon(0, QIcon(":/Resources/images/icon.png"));
 		ui.dataTree->addTopLevelItem(cloudName);
 
-		//setWindowTitle(filename + " - CloudViewer1.0"); //更新标题
+		//setWindowTitle(filename + " - CloudViewer"); //更新标题
 
 		total_points += mycloud.cloud->points.size();
 	}
@@ -163,10 +171,12 @@ void CloudViewer::open()
 // Add Point Cloud
 void CloudViewer::add()
 {
-	QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Open point cloud file"), "E:/Date/PointCloud", tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)"));
+	QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Open point cloud file"), QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)"));
 	if (filenames.isEmpty())
 		return;
 	for (int i = 0; i != filenames.size(); i++){
+		// time start
+		timeStart();
 		mycloud.cloud.reset(new PointCloudT);
 		QString filename = filenames[i];
 		std::string file_name = filename.toStdString();
@@ -215,17 +225,20 @@ void CloudViewer::add()
 		setA(255);  //设置点云为不透明
 		mycloud.filename = file_name;
 		mycloud.subname = subname;
+		mycloud.dirname = file_name.substr(0, file_name.size() - subname.size());
 		mycloud_vec.push_back(mycloud);  //将点云导入点云容器
 
+		// time of
+		time_cost = timeOff();
 		//输出窗口
-		consoleLog("Add", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "");
+		consoleLog("Add", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "Time cost: " + time_cost + " s, Points: " + QString::number(mycloud.cloud->points.size()));
 
 		//设置资源管理器
 		QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList() << QString::fromLocal8Bit(subname.c_str()));
 		cloudName->setIcon(0, QIcon(":/Resources/images/icon.png"));
 		ui.dataTree->addTopLevelItem(cloudName);
 
-		//setWindowTitle("CloudViewer1.0");
+		//setWindowTitle("CloudViewer");
 		total_points += mycloud.cloud->points.size();
 	}
 	ui.statusBar->showMessage("");
@@ -250,7 +263,7 @@ void CloudViewer::clear()
 	//输出窗口
 	consoleLog("Clear", "All point clouds", "", "");
 
-	setWindowTitle("CloudViewer1.0");  //更新窗口标题
+	setWindowTitle("CloudViewer");  //更新窗口标题
 	showPointcloud();  //更新显示
 }
 
@@ -259,7 +272,7 @@ void CloudViewer::clear()
 void CloudViewer::save()
 {
 	save_filename = QFileDialog::getSaveFileName(this, tr("Save point cloud"),
-		"E:/Date/PointCloud", tr("Point cloud data(*.pcd *.ply);;Allfile(*.*)"));
+		QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply);;Allfile(*.*)"));
 	std::string file_name = save_filename.toStdString();
 	std::string subname = getFileName(file_name);
 	//文件名为空直接返回
@@ -298,10 +311,59 @@ void CloudViewer::save()
 	//输出窗口
 	consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), save_filename, "Single save");
 
-	setWindowTitle(save_filename + " - CloudViewer1.0");
+	setWindowTitle(save_filename + " - CloudViewer");
 	QMessageBox::information(this, tr("save point cloud file"),
 		QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
 }
+
+// Save point cloud as binary file
+void CloudViewer::saveBinary()
+{
+	save_filename = QFileDialog::getSaveFileName(this, tr("Save point cloud as binary file"),
+		QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply);;Allfile(*.*)"));
+	std::string file_name = save_filename.toStdString();
+	std::string subname = getFileName(file_name);
+	//文件名为空直接返回
+	if (save_filename.isEmpty())
+		return;
+
+	if (mycloud_vec.size() > 1)
+	{
+		savemulti();
+		return;
+	}
+
+	int status = -1;
+	if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))
+	{
+		status = pcl::io::savePCDFileBinary(file_name, *(mycloud.cloud));
+	}
+	else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
+	{
+		status = pcl::io::savePLYFileBinary(file_name, *(mycloud.cloud));
+	}
+	else //提示：无法保存为除了.ply .pcd以外的文件
+	{
+		QMessageBox::information(this, tr("File format error"),
+			tr("Can't save files except .ply .pcd"));
+		return;
+	}
+	//提示：后缀没问题，但是无法保存
+	if (status != 0)
+	{
+		QMessageBox::critical(this, tr("Saving file error"),
+			tr("We can not save the file"));
+		return;
+	}
+
+	//输出窗口
+	consoleLog("Save as binary", QString::fromLocal8Bit(subname.c_str()), save_filename, "Single save (binary)");
+
+	setWindowTitle(save_filename + " - CloudViewer");
+	QMessageBox::information(this, tr("save point cloud file"),
+		QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
+}
+
 
 // Save multi point cloud
 void CloudViewer::savemulti()
@@ -331,22 +393,33 @@ void CloudViewer::savemulti()
 			k++;
 		}
 	}
-
 	//保存multi_cloud
 	int status = -1;
 	if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))
 	{
-		status = pcl::io::savePCDFile(save_filename.toStdString(), *multi_cloud);
+		if (save_as_binary){
+			status = pcl::io::savePCDFileBinary(save_filename.toStdString(), *multi_cloud);
+		}
+		else{
+			status = pcl::io::savePCDFile(save_filename.toStdString(), *multi_cloud);
+		}
+		
 	}
 	else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
 	{
-		status = pcl::io::savePLYFile(save_filename.toStdString(), *multi_cloud);
+		if (save_as_binary){
+			status = pcl::io::savePLYFileBinary(save_filename.toStdString(), *multi_cloud);
+		}
+		else{
+			status = pcl::io::savePLYFile(save_filename.toStdString(), *multi_cloud);
+		}
 	}
 	else //提示：无法保存为除了.ply .pcd以外的文件
 	{
 		QMessageBox::information(this, tr("File format error"), tr("Can't save files except .ply .pcd"));
 		return;
 	}
+	
 	//提示：后缀没问题，但是无法保存
 	if (status != 0)
 	{
@@ -355,14 +428,21 @@ void CloudViewer::savemulti()
 	}
 
 	// 输出窗口
-	consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), save_filename, "Multi save");
+	if (save_as_binary){
+		consoleLog("Save as binary", QString::fromLocal8Bit(subname.c_str()), save_filename, "Multi save (binary)");
+	}
+	else{
+		consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), save_filename, "Multi save");
+	}
+	
 
+	save_as_binary = false;
 	//将保存后的 multi_cloud 设置为当前 mycloud,以便保存之后直接进行操作
 	mycloud.cloud = multi_cloud;
 	mycloud.filename = save_filename.toStdString();
 	mycloud.subname = subname;
 
-	setWindowTitle(save_filename + " - CloudViewer1.0");
+	setWindowTitle(save_filename + " - CloudViewer");
 	QMessageBox::information(this, tr("save point cloud file"), QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
 }
 
@@ -420,7 +500,7 @@ void CloudViewer::initial()
 {
 	//界面初始化
 	setWindowIcon(QIcon(tr(":/Resources/images/icon.png")));
-	setWindowTitle(tr("CloudViewer1.0"));
+	setWindowTitle(tr("CloudViewer"));
 
 	//点云初始化
 	mycloud.cloud.reset(new PointCloudT);

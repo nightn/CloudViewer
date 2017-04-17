@@ -85,6 +85,7 @@
     <addaction name="addAction"/>
     <addaction name="clearAction"/>
     <addaction name="saveAction"/>
+    <addaction name="saveBinaryAction"/>
     <addaction name="changeAction"/>
     <addaction name="exitAction"/>
    </widget>
@@ -193,6 +194,7 @@
    <addaction name="addAction"/>
    <addaction name="clearAction"/>
    <addaction name="saveAction"/>
+   <addaction name="saveBinaryAction"/>
    <addaction name="changeAction"/>
    <addaction name="separator"/>
    <addaction name="pointcolorAction"/>
@@ -1109,6 +1111,18 @@
   <action name="chineseAction">
    <property name="text">
     <string>Chinese</string>
+   </property>
+  </action>
+  <action name="saveBinaryAction">
+   <property name="icon">
+    <iconset resource="cloudviewer.qrc">
+     <normaloff>:/Resources/images/saveBinary.png</normaloff>:/Resources/images/saveBinary.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save as binary</string>
+   </property>
+   <property name="statusTip">
+    <string>Save point cloud as binary file</string>
    </property>
   </action>
  </widget>

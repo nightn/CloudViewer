@@ -81,7 +81,9 @@ private:
 	QVBoxLayout *layout;
 
 	int theme_id = 1; // 0: Windows theme, 1: Darcula theme
-	bool enable_console = true;
+	bool enable_console = true; // console 的可用状态
+	bool save_as_binary = false;
+	QString time_cost = "0";  // 记录某个动作执行的时间
 
 	/***** Slots of QMenuBar and QToolBar *****/
 	// File menu slots
@@ -89,6 +91,7 @@ private:
 	void add();
 	void clear();
 	void save();
+	void saveBinary();
 	void savemulti();
 	void change();
 	void exit();
