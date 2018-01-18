@@ -22,7 +22,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 5. **软件界面基本功能**。软件由: [1] 菜单栏、[2] 工具栏、[3] 资源管理树、[4] 属性管理器、[5] 输出窗口、[6] 状态栏、[7] 视图窗口以及 [8] RGB 窗口组成。其中部分都是停靠窗口，可以在菜单栏的视图选项设置是否显示，方便用户自定义软件界面。软件还提供 Windows 和 Darcula 两大主题，其中 Darcula 主题为默认主题，仿照 Visual Studio 和 Android Studio 相应暗系主题设计，极具极客风范。不过为了适应大部分用户，本手册中的示例都是在 Windows 主题下操作的。
 
-   <img  src="http://i1.piimg.com/567571/0e4eb5ab534d1a3f.png" width="750"/>
+   <img  src="img/File 菜单和工具栏.png" width="750"/>
 
 ## CloudViewer 下载及声明
 
@@ -47,18 +47,18 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 点云 IO 的常用操作可以在 `File` 菜单及工具栏中找到：
 
-<img src="http://i4.buimg.com/567571/d3f16a646b17195c.png" width="500"/>
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/界面介绍带标号.png" width="500"/>
 
 打开动作 `Open` 的实现效果如下图，支持多选进行批量打开。
 
-<img src="http://i1.piimg.com/567571/6623341a0fca345d.png" width="650">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/打开多个点云NEW.png" width="650">
 
 
 #### 1.2 添加点云
 
 点云处理中，有时需要同时对多个点云在同一视图窗口进行可视化和处理。添加点云 `Add` 每次可以添加一个或多个点云文件，而不会清空后台已经缓存的点云数据，也不会清空视图窗口已经显示的点云模型。理论上，添加点云的数量没有限制。`Add` 实现效果如下图（为了便于区分，将点云设置成了不同颜色）：
 
-<img src="http://i4.buimg.com/567571/43b3e38c0feec752.png" width="650"/>
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/打开多个点云NEW.png" width="650"/>
 
 #### 1.3 保存点云
 
@@ -66,7 +66,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 - **多类型保存**。`Open` 可以实现对 pcd, ply 和 obj 等格式文件的多类型打开，`Save` 也可以将文件保存成 pcd, ply 等多种类型，这样也就实现了点云的格式转换功能：
 
-  <img src="http://i2.muimg.com/567571/eb2912be6ac13b60.png" width="300"/>
+  <img src="http://nightn.com/2017/04/15/cloudviewer/img/open_save.png" width="300"/>
 
 
 - **多文件保存**。CloudViewer 还能将视图窗口显示的所有点云保存为同一个文件，实现了多文件的合并保存。
@@ -91,7 +91,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 - 调整RGB值改变单一点云文件颜色。
 
-  <img src="http://i2.muimg.com/567571/82e033ee308d0bbe.png" width="600"/>
+  <img src="http://nightn.com/2017/04/15/cloudviewer/img/改变点云颜色-演示.png" width="600"/>
 
 - 在多个点云同时显示时，通过在资源管理树的item进行选择，实现对某一个选定的点云进行颜色变换。
 
@@ -99,7 +99,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 - 随机上色功能。
 
-  <img src="http://i2.muimg.com/567571/2716b36a81421ea4.png" width="600"/>
+  <img src="http://nightn.com/2017/04/15/cloudviewer/img/随机颜色-演示.png" width="600"/>
 
 #### 2.2 点云格式转换
 
@@ -107,7 +107,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 CloudViewer 目前实现了多种点云格式的相互转换（wrl文件的转换还有待进一步开发），通过打开并另存为即可实现三种不同点云格式之间的相互转换，打开和保存的实现可以参见上述部分。如下图：
 
-<img src="http://i2.muimg.com/567571/eb2912be6ac13b60.png" width="300"/>
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/open_save.png" width="300"/>
 
 #### 2.3 合并点云
 
@@ -123,19 +123,19 @@ CloudViewer 目前实现了多种点云格式的相互转换（wrl文件的转�
 
 视图窗口中的点云颜色可以更改，背景颜色亦然，效果如下：
 
-<img src="http://i4.buimg.com/567571/cd3a002fe0dc7a76.png" width="600" />
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/设置背景颜色-演示.png" width="600" />
 
 #### 3.2 设置点云可视化尺寸
 
 点云由很多点构成，每个点本身具有颜色信息，但是没有尺寸大小的信息。但需要以不同大小进行显示，这是可视化的任务，不涉及对点云本身的修改。设置点云可视化尺寸功能效果如下，分别对应size = 1, 2, 3时点云的大小，为了不影响点云操作，允许的最大尺寸为10（因为点的尺寸越大，渲染速度越慢，对点云的操作也不方便）。
 
-<img src="http://i4.buimg.com/567571/e54ab009f24b65da.png" width="600">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/尺寸设置-演示2.png" width="600">
 
 #### 3.3 设置视图方位
 
 设置可视化的视图方位提供了三种不同的视图，主视图（Main View），左视图（Left View）和俯视图（Top View），通过选择相应的视图方位，实现对点云更加快捷的操作。设置视图方位效果如下：
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/60148279-file_1492312269456_326b.png" width="600" />
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/设置视图方位.png" width="600" />
 
 #### 3.4 网格面片显示及网格线框显示
 
@@ -143,11 +143,11 @@ PCL库中提供了非常强大的点云处理功能。在CloudViewer中，实现
 
 - 网格面片显示：
 
-  <img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/18366109-file_1492312357951_2350.png" width="600" />
+  <img src="http://nightn.com/2017/04/15/cloudviewer/img/网格面片显示.png" width="600" />
 
 - 网格线框显示：
 
-  <img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/42427844-file_1492312458674_1010.png" width="600" />
+  <img src="http://nightn.com/2017/04/15/cloudviewer/img/网格线框显示.png" width="600" />
 
 
 
@@ -157,13 +157,13 @@ PCL库中提供了非常强大的点云处理功能。在CloudViewer中，实现
 
 这是一个非常简单但很实用的功能，当你没有点云数据时，可以通过这个功能，生成一个由50000个点随机排布成的立方，如下图所示：
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/76963151-file_1492312575085_513.png" width="600">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/cube生成.png" width="600">
 
 #### 4.2 基本三维模型生成
 
 仅实现了球体的生成。球体生成效果如下图所示：
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/5565846-file_1492312658534_272c.png" width="600">
+<img src="img/创建球体.png" width="600">
 
 
 
@@ -173,31 +173,31 @@ PCL库中提供了非常强大的点云处理功能。在CloudViewer中，实现
 
 CloudViewer 包含四个停靠窗口：资源管理树（Data Manager）、属性管理器（Property Manager）、输出窗口（Console）以及RGB窗口（RGB Manager）。通过 View 菜单的选项可以实现停靠窗口的显示及隐藏。
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/34892112-file_1492312796597_9442.png" width="300">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/停靠.png" width="300">
 
 #### 5.2 Console 窗口
 
 输出窗口提供了记录你的操作日志，方便查看，通过右击选择 `Clear` 可以进行清空，如果你觉得输出窗口没有必要，也可以通过右击选择 `Disable console` 和 `Enable console` 来禁用或使用输出窗口。
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/51737349-file_1492312997279_6e07.png" width="700">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/console.png" width="700">
 
 #### 5.3 资源管理树
 
 资源管理树显示了当前打开的所有点云，可以通过单选或多选，然后右键，进行点云的隐藏、显示、删除设置颜色等操作，非常快捷。
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/51128716-file_1492313155197_f721.png">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/资源管理树.png">
 
 #### 5.4 属性管理器
 
 属性管理器记录了选中点云的一些属性：选中点云的点的数量、RGB 信息，还包括打开的点云的总个数，及所有点云点的数量等。
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/91186235-file_1492313161678_3707.png">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/属性管理器.png">
 
 #### 5.5 关于
 
 通过 `Help` 可以访问我的博客，查看 CloudViewer 的使用手册（后续会出开发手册）。`About` 界面记录了 CloudViewer 的版本信息和开发者信息。
 
-<img src="http://on2kkr82s.bkt.clouddn.com/17-4-16/66487572-file_1492313628322_a227.png" width="350" />
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/关于窗口.png" width="350" />
 
 
 
