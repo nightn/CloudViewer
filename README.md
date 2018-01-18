@@ -22,13 +22,13 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 5. **软件界面基本功能**。软件由: [1] 菜单栏、[2] 工具栏、[3] 资源管理树、[4] 属性管理器、[5] 输出窗口、[6] 状态栏、[7] 视图窗口以及 [8] RGB 窗口组成。其中部分都是停靠窗口，可以在菜单栏的视图选项设置是否显示，方便用户自定义软件界面。软件还提供 Windows 和 Darcula 两大主题，其中 Darcula 主题为默认主题，仿照 Visual Studio 和 Android Studio 相应暗系主题设计，极具极客风范。不过为了适应大部分用户，本手册中的示例都是在 Windows 主题下操作的。
 
-   <img  src="img/File 菜单和工具栏.png" width="750"/>
+   <img  src="http://nightn.com/2017/04/15/cloudviewer/img/%E7%95%8C%E9%9D%A2%E4%BB%8B%E7%BB%8D%E5%B8%A6%E6%A0%87%E5%8F%B7.png" width="750"/>
 
 ## CloudViewer 下载及声明
 
 1. **软件下载**：[CloudViewer 下载](http://on2kkr82s.bkt.clouddn.com/CloudViewer.rar) （软件大小 23.7 MB，目前仅支持 Windows 系统)。
 2. Github 源码：https://github.com/nightn/CloudViewer （欢迎 Star 和 Fork）
-3. 使用手册：http://www.nightn.com/cloudviewer
+3. 使用手册：http://nightn.com/2017/04/15/cloudviewer/
 4. 开发环境：CloudViewer 是用 Windows 10 (64 位) 系统下的 Mircosoft Visual Studio Professional 2013，结合使用 Qt 5.7.0 (64 位) 及 PCL 1.8.0 (64 位) 等开源库进行开发的。
 5. 资源使用：软件所使用的图片资源均来源于 [www.easyicon.net](http://www.easyicon.net)。
 6. 声明：本软件用作分享与学习，若转载请注明出处，勿作任何商业用途。
@@ -47,11 +47,11 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 点云 IO 的常用操作可以在 `File` 菜单及工具栏中找到：
 
-<img src="http://nightn.com/2017/04/15/cloudviewer/img/界面介绍带标号.png" width="500"/>
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/File%20%E8%8F%9C%E5%8D%95%E5%92%8C%E5%B7%A5%E5%85%B7%E6%A0%8F.png" width="500"/>
 
 打开动作 `Open` 的实现效果如下图，支持多选进行批量打开。
 
-<img src="http://nightn.com/2017/04/15/cloudviewer/img/打开多个点云NEW.png" width="650">
+<img src="http://nightn.com/2017/04/15/cloudviewer/img/%E6%89%93%E5%BC%80%E7%82%B9%E4%BA%91NEW.png" width="650">
 
 
 #### 1.2 添加点云
