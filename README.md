@@ -26,7 +26,7 @@ CloudViewer （点云可视化软件）是一款面向三维点云数据处理�
 
 ## CloudViewer 下载及声明
 
-1. **软件下载**：[CloudViewer 下载](http://on2kkr82s.bkt.clouddn.com/CloudViewer.rar) （软件大小 23.7 MB，目前仅支持 Windows 系统)。
+1. **软件下载**：[CloudViewer 下载](http://on2kkr82s.bkt.clouddn.com/CloudViewer.zip) （软件大小 30 MB，目前仅支持 Windows 系统)。
 2. Github 源码：https://github.com/nightn/CloudViewer （欢迎 Star 和 Fork）
 3. 使用手册：http://nightn.com/2017/04/15/cloudviewer/
 4. 开发环境：CloudViewer 是用 Windows 10 (64 位) 系统下的 Mircosoft Visual Studio Professional 2013，结合使用 Qt 5.7.0 (64 位) 及 PCL 1.8.0 (64 位) 等开源库进行开发的。
