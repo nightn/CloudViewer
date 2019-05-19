@@ -5,20 +5,20 @@
 ## 目录
 
 - [环境搭建](#环境搭建)
-  - [PCL 安装](#PCL 安装)
-  - [Qt 安装](#Qt 安装)
+  - [PCL安装](#PCL安装)
+  - [Qt安装](#Qt安装)
   - [环境变量配置](#环境变量配置)
-- [CloudViewer 编译运行](#CloudViewer 编译运行)
+- [CloudViewer编译运行](#CloudViewer编译运行)
 
 ## 环境搭建
 
-### PCL 安装
+### PCL安装
 
 ```shell
 sudo apt-get install libpcl-dev
 ```
 
-### Qt 安装
+### Qt安装
 
 下载 Qt（以 5.10.1 为例）。
 
@@ -55,7 +55,7 @@ export PATH="/home/nightn/Qt5.10.1/5.10.1/gcc_64/bin:$PATH"
 
 <img src="http://nightn.com/cloudviewer/img2/linux-qt-env.png" width="500" />
 
-## CloudViewer 编译运行
+## CloudViewer编译运行
 
 克隆项目：
 

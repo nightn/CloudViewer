@@ -12,12 +12,12 @@
 
 - [环境搭建](#环境搭建)
   - [资源下载](#资源下载)
-  - [Visual Studio 安装](#Visual Studio 安装)
-  - [PCL 安装](#PCL 安装)
-  - [Qt 安装](Qt 安装)
-  - [vtk 编译](#vtk 编译)
+  - [VS安装](#VS安装)
+  - [PCL安装](#PCL安装)
+  - [Qt安装](Qt安装)
+  - [VTK编译](#VTK编译)
   - [环境变量配置](#环境变量配置)
-- [CloudViewer 编译运行](#CloudViewer 编译运行)
+- [CloudViewer编译运行](#CloudViewer编译运行)
 - CloudViewer打包（TODO）
 
 ## 环境搭建
@@ -37,7 +37,7 @@
   - [vtk8.1.0 source code](https://github.com/Kitware/VTK/archive/v8.1.0.zip)
   - [cmake](<https://cmake.org/download/>) 
 
-### Visual Studio 安装
+### VS安装
 
 作为演示，为简单起见，安装 Visual Studio 2017 社区版，在安装时，仅勾选了必需的 `Desktop development with C++`。如个人有其他开发需要（如 .NET 开发），可以自行勾选。
 
@@ -47,7 +47,7 @@ VS2017 与之前版本不同，是在线安装，即边下载边安装，耗时�
 
 <img src="http://nightn.com/cloudviewer/img2/vs2017-community-installing.png" width="400"/>
 
-### PCL 安装
+### PCL安装
 
 PCL 是点云开源库，可以在其 Github realese 页面获取 windows 安装程序和 pdb 文件。这里选择目前最新版 PCL1.9.1 进行安装，将所有组件都勾选上。
 
@@ -57,7 +57,7 @@ PCL 是点云开源库，可以在其 Github realese 页面获取 windows 安装
 
 <img src="http://nightn.com/cloudviewer/img2/openni2-path.png" width="500"/>
 
-### Qt 安装
+### Qt安装
 
 安装 Qt5.10.1，在安装组件选择时，根据 Visual Studio 的版本选择对应的 Qt，在此选择 `MSVC 2017 64-bit`，其他组件可以按需选择。
 
@@ -75,7 +75,7 @@ PCL 是点云开源库，可以在其 Github realese 页面获取 windows 安装
 
 <img src="http://nightn.com/cloudviewer/img2/qt-options.png" width="500"/>
 
-### VTK 编译
+### VTK编译
 
 PCL 依赖 VTK，在其 `3rdParty` 目录下可以看到 VTK。那为什么还要自己手动编译 VTK 呢？这是因为，PCL 安装目录下的 VTK 并不完整，其中就少了与 Qt 相关的模块，而这些模块是 CloudViewer 编译运行所需要的（如 `QVTKWidget`）。所以我们需要手动编译 VTK，并替换 PCL `3rdParty` 下的 VTK。
 
@@ -121,7 +121,7 @@ PCL 依赖 VTK，在其 `3rdParty` 目录下可以看到 VTK。那为什么还�
 - **%PCL_ROOT%\3rdParty\Qhull\bin**
 - **%PCL_ROOT%\3rdParty\OpenNI2\Tools**
 
-## CloudViewer 编译运行
+## CloudViewer编译运行
 
 克隆 CloudViewer。
 
@@ -150,12 +150,3 @@ cmake --build build
 运行结果如下图所示。
 
 <img src="http://nightn.com/cloudviewer/img2/windows-run-result.png" width="600"/>
-
-
-
-
-
-
-
-
-
