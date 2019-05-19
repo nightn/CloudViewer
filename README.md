@@ -11,7 +11,7 @@ You can learn more from this [document](https://github.com/nightn/CloudViewer/tr
 Compiling
 ---------
 Please refer to the platform specific tutorials (Chinese):
- - [Microsoft Windows](https://github.com/nightn/CloudViewer/tree/master/doc/compile-cloudviewer-windows.md)
+ - [Microsoft Windows](https://github.com/nightn/CloudViewer/tree/master/doc/compiling-cloudviewer-windows.md)
  - [Linux](https://github.com/nightn/CloudViewer/tree/master/doc/compiling-cloudviewer-linux.md)
 
 Issues
