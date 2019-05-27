@@ -1,8 +1,7 @@
 #include "CloudViewer.h"
 
 CloudViewer::CloudViewer(QWidget *parent)
-	: QMainWindow(parent)
-{
+	: QMainWindow(parent) {
 	ui.setupUi(this);
 
 	/***** Slots connection of QMenuBar and QToolBar *****/
@@ -10,9 +9,11 @@ CloudViewer::CloudViewer(QWidget *parent)
 	QObject::connect(ui.openAction, &QAction::triggered, this, &CloudViewer::open);
 	QObject::connect(ui.addAction, &QAction::triggered, this, &CloudViewer::add);
 	QObject::connect(ui.clearAction, &QAction::triggered, this, &CloudViewer::clear);
-	QObject::connect(ui.saveAction, &QAction::triggered, this, &CloudViewer::save);
-	QObject::connect(ui.saveBinaryAction, &QAction::triggered, this, &CloudViewer::saveBinary);
-	QObject::connect(ui.changeAction, &QAction::triggered, this, &CloudViewer::change);
+
+	ui.saveAction->setData(QVariant(false));       // isSaveBinary = false
+	ui.saveBinaryAction->setData(QVariant(true));  // isSaveBinary = true
+	connect(ui.saveAction, SIGNAL(triggered()), this, SLOT(save()));
+	connect(ui.saveBinaryAction, SIGNAL(triggered()), this, SLOT(save()));
 	QObject::connect(ui.exitAction, &QAction::triggered, this, &CloudViewer::exit);
 	// Display (connect)
 	QObject::connect(ui.pointcolorAction, &QAction::triggered, this, &CloudViewer::pointcolorChanged);
@@ -20,11 +21,6 @@ CloudViewer::CloudViewer(QWidget *parent)
 	QObject::connect(ui.mainviewAction, &QAction::triggered, this, &CloudViewer::mainview);
 	QObject::connect(ui.leftviewAction, &QAction::triggered, this, &CloudViewer::leftview);
 	QObject::connect(ui.topviewAction, &QAction::triggered, this, &CloudViewer::topview);
-	// View (connect)
-	QObject::connect(ui.dataAction, &QAction::triggered, this, &CloudViewer::data);
-	QObject::connect(ui.propertyAction, &QAction::triggered, this, &CloudViewer::properties);
-	QObject::connect(ui.consoleAction, &QAction::triggered, this, &CloudViewer::console);
-	QObject::connect(ui.RGBAction, &QAction::triggered, this, &CloudViewer::rgbDock);
 	// Generate (connect)
 	QObject::connect(ui.cubeAction, &QAction::triggered, this, &CloudViewer::cube);
 	QObject::connect(ui.sphereAction, &QAction::triggered, this, &CloudViewer::createSphere);
@@ -32,13 +28,15 @@ CloudViewer::CloudViewer(QWidget *parent)
 	// Process (connect)
 	QObject::connect(ui.meshsurfaceAction, &QAction::triggered, this, &CloudViewer::convertSurface);
 	QObject::connect(ui.wireframeAction, &QAction::triggered, this, &CloudViewer::convertWireframe);
-	QObject::connect(ui.actionBilateralFilter, &QAction::triggered, this, &CloudViewer::bilateralFilter);
-	QObject::connect(ui.actionRotate90, &QAction::triggered, this, &CloudViewer::rotatePointCloud);
 	// Option (connect)
-	QObject::connect(ui.windowsThemeAction, &QAction::triggered, this, &CloudViewer::windowsTheme);
-	QObject::connect(ui.darculaThemeAction, &QAction::triggered, this, &CloudViewer::darculaTheme);
-	QObject::connect(ui.englishAction, &QAction::triggered, this, &CloudViewer::langEnglish);
-	QObject::connect(ui.chineseAction, &QAction::triggered, this, &CloudViewer::langChinese);
+	ui.windowsThemeAction->setData(QVariant(CLOUDVIEWER_THEME_WINDOWS));
+	ui.darculaThemeAction->setData(QVariant(CLOUDVIEWER_THEME_DARCULA));
+	ui.englishAction->setData(QVariant(CLOUDVIEWER_LANG_ENGLISH));
+	ui.chineseAction->setData(QVariant(CLOUDVIEWER_LANG_CHINESE));
+	connect(ui.windowsThemeAction, SIGNAL(triggered()), this, SLOT(changeTheme()));
+	connect(ui.darculaThemeAction, SIGNAL(triggered()), this, SLOT(changeTheme()));
+	connect(ui.englishAction, SIGNAL(triggered()), this, SLOT(changeLanguage()));
+	connect(ui.chineseAction, SIGNAL(triggered()), this, SLOT(changeLanguage()));
 	// About (connect)
 	QObject::connect(ui.aboutAction, &QAction::triggered, this, &CloudViewer::about);
 	QObject::connect(ui.helpAction, &QAction::triggered, this, &CloudViewer::help);
@@ -72,223 +70,91 @@ CloudViewer::CloudViewer(QWidget *parent)
 	initial();
 }
 
-CloudViewer::~CloudViewer()
-{
+CloudViewer::~CloudViewer() {
 
 }
 
-// Open point cloud
-void CloudViewer::open()
-{
-	QStringList filenames = QFileDialog::getOpenFileNames(
-		this,
-		tr("Open point cloud file"),
-		QString::fromLocal8Bit(mycloud.dirname.c_str()),
-		tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)")
-	);
-	//Return if filenames is empty
-	if (filenames.isEmpty()) return;
-
-	// Clear cache
-	mycloud_vec.clear();
-	total_points = 0;
-	ui.dataTree->clear();
-	viewer->removeAllPointClouds();
-
-	// Open point cloud one by one
-	for (int i = 0; i != filenames.size(); i++){
-		// time start
-		timeStart();
+void CloudViewer::doOpen(const QStringList& filePathList) {
+	// Open point cloud file one by one
+	for (int i = 0; i != filePathList.size(); i++) {
+		timeStart(); // time start
 		mycloud.cloud.reset(new PointCloudT); // Reset cloud
-		QString filename = filenames[i];
-		std::string file_name = filename.toStdString();
-		std::string subname = getFileName(file_name);  //提取全路径中的文件名（带后缀）
-
-		//更新状态栏
+		QFileInfo fileInfo(filePathList[i]);
+		std::string filePath = fromQString(fileInfo.filePath());
+		std::string fileName = fromQString(fileInfo.fileName());
+		
+		// begin loading
 		ui.statusBar->showMessage(
-			QString::fromLocal8Bit(subname.c_str()) + ": " + QString::number(i) + "/" + QString::number(filenames.size())
+			fileInfo.fileName() + ": " + QString::number(i) + "/" + QString::number(filePathList.size())
 			+ " point cloud loading..."
 		);
 
-		int status = -1;
-		if (filename.endsWith(".pcd", Qt::CaseInsensitive))
-		{
-			status = pcl::io::loadPCDFile(file_name, *(mycloud.cloud));
-			// 判断是否多色点云
-			if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-			{
-				setCloudColor(255, 255, 255);
-			}
+		mycloud = fileIO.load(fileInfo);
+		if (!mycloud.isValid) {
+			// TODO: deal with the error, print error info in console?
+			debug("invalid cloud.");
+			continue;
 		}
-		else if (filename.endsWith(".ply", Qt::CaseInsensitive))
-		{
-			status = pcl::io::loadPLYFile(file_name, *(mycloud.cloud));
-			if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-			{
-				setCloudColor(255, 255, 255);
-			}
-		}
-		// Test loadPolygonFileOBJ
-		//else if (filename.endsWith(".obj", Qt::CaseInsensitive))
-		//{
-		//	status = pcl::io::loadOBJFile(file_name, *(mycloud.cloud));
-		//	if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-		//	{
-		//		setCloudColor(255, 255, 255);
-		//	}
-		//}
+		mycloud.viewer = viewer;
+		mycloud_vec.push_back(mycloud);
 
-		else if (filename.endsWith(".obj", Qt::CaseInsensitive)) {
-			pcl::PolygonMesh mesh;
-			status = pcl::io::loadPolygonFileOBJ(file_name, mesh);
-			viewer->addPolygonMesh(mesh, "polygon-obj", 0);
+		timeCostSecond = timeOff(); // time off
 
-			double area = calculatePCLPolygonMeshArea(mesh);
-			//qDebug() << area << endl;
+		consoleLog(
+			"Open",
+			toQString(mycloud.fileName),
+			toQString(mycloud.filePath),
+			"Time cost: " + timeCostSecond + " s, Points: " + QString::number(mycloud.cloud->points.size())
+		);
 
-			viewer->resetCamera();
-			ui.screen->update();
-
-			QMessageBox::information(this, tr("Mesh area"),
-				QString::fromLocal8Bit(
-					("Area: " + to_string(area)
-					+ ", Vertices: " + to_string(mesh.cloud.data.size() / 16)
-					+ ", Faces: " + to_string(mesh.polygons.size())
-					).c_str()
-				)
-			);
-
-			//viewer->setRepresentationToSurfaceForAllActors(); //网格模型以面片形式显示
-			//viewer->setRepresentationToPointsForAllActors(); //网格模型以点形式显示
-			//viewer->setRepresentationToWireframeForAllActors(); //网格模型以线框图模式显示
-
-			return;
-		}
-
-		else
-		{
-			//提示：无法读取除了.ply .pcd .obj以外的文件
-			QMessageBox::information(this, tr("File format error"),
-				tr("Can't open files except .ply .pcd .obj"));
-			return;
-		}
-		//提示：后缀没问题，但文件内容无法读取
-		if (status != 0)
-		{
-			QMessageBox::critical(this, tr("Reading file error"), tr("We can not open the file"));
-			return;
-		}
-		setA(255);  //设置点云为不透明
-		// 最后导入的点云的信息
-		mycloud.filename = file_name;
-		mycloud.subname = subname;
-		mycloud.dirname = file_name.substr(0, file_name.size() - subname.size());
-		mycloud_vec.push_back(mycloud);  //将点云导入点云容器
-
-		
-		// time off
-		time_cost = timeOff();
-		// 输出窗口
-		consoleLog("Open", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "Time cost: " + time_cost + " s, Points: " + QString::number(mycloud.cloud->points.size()));
-
-		//更新资源管理树
+		// update tree widget
 		QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList()
-			<< QString::fromLocal8Bit(subname.c_str()));
+			<< toQString(mycloud.fileName));
 		cloudName->setIcon(0, QIcon(":/Resources/images/icon.png"));
 		ui.dataTree->addTopLevelItem(cloudName);
 
-		//setWindowTitle(filename + " - CloudViewer"); //更新标题
-
-		total_points += mycloud.cloud->points.size();
-	}
-	ui.statusBar->showMessage("");
-	showPointcloudAdd();  //更新视图窗口
-	setPropertyTable();
-
-}
-
-// Add Point Cloud
-void CloudViewer::add()
-{
-	QStringList filenames = QFileDialog::getOpenFileNames(this, tr("Open point cloud file"), QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply *.obj);;All file(*.*)"));
-	if (filenames.isEmpty())
-		return;
-	for (int i = 0; i != filenames.size(); i++){
-		// time start
-		timeStart();
-		mycloud.cloud.reset(new PointCloudT);
-		QString filename = filenames[i];
-		std::string file_name = filename.toStdString();
-		std::string subname = getFileName(file_name);
-
-		// 更新状态栏
-		ui.statusBar->showMessage(QString::fromLocal8Bit(subname.c_str()) + ": " + QString::number(i) + "/" + QString::number(filenames.size()) + " point cloud loading...");
-
-		int status = -1;
-		if (filename.endsWith(".pcd", Qt::CaseInsensitive))
-		{
-			status = pcl::io::loadPCDFile(file_name, *(mycloud.cloud));
-			if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-			{
-				setCloudColor(255, 255, 255);
-			}
-		}
-		else if (filename.endsWith(".ply", Qt::CaseInsensitive))
-		{
-			status = pcl::io::loadPLYFile(file_name, *(mycloud.cloud));
-			if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-			{
-				setCloudColor(255, 255, 255);
-			}
-		}
-		else if (filename.endsWith(".obj", Qt::CaseInsensitive))
-		{
-			status = pcl::io::loadOBJFile(file_name, *(mycloud.cloud));
-			if (mycloud.cloud->points[0].r == 0 && mycloud.cloud->points[0].g == 0 && mycloud.cloud->points[0].b == 0)
-			{
-				setCloudColor(255, 255, 255);
-			}
-		}
-		else
-		{
-			//提示：无法读取除了.ply .pcd .obj以外的文件
-			QMessageBox::information(this, tr("File format error"), tr("Can't open files except .ply .pcd .obj"));
-			return;
-		}
-		//提示：后缀没问题，但文件内容无法读取
-		if (status != 0)
-		{
-			QMessageBox::critical(this, tr("Reading file error"), tr("We can not open the file"));
-			return;
-		}
-		setA(255);  //设置点云为不透明
-		mycloud.filename = file_name;
-		mycloud.subname = subname;
-		mycloud.dirname = file_name.substr(0, file_name.size() - subname.size());
-		mycloud_vec.push_back(mycloud);  //将点云导入点云容器
-
-		// time of
-		time_cost = timeOff();
-		//输出窗口
-		consoleLog("Add", QString::fromLocal8Bit(mycloud.subname.c_str()), QString::fromLocal8Bit(mycloud.filename.c_str()), "Time cost: " + time_cost + " s, Points: " + QString::number(mycloud.cloud->points.size()));
-
-		//设置资源管理器
-		QTreeWidgetItem *cloudName = new QTreeWidgetItem(QStringList() << QString::fromLocal8Bit(subname.c_str()));
-		cloudName->setIcon(0, QIcon(":/Resources/images/icon.png"));
-		ui.dataTree->addTopLevelItem(cloudName);
-
-		//setWindowTitle("CloudViewer");
 		total_points += mycloud.cloud->points.size();
 	}
 	ui.statusBar->showMessage("");
 	showPointcloudAdd();
 	setPropertyTable();
+}
 
+// Open point cloud
+void CloudViewer::open() {
+	QStringList filePathList = QFileDialog::getOpenFileNames(
+		this,
+		tr("Open point cloud file"),
+		toQString(mycloud.fileDir),
+		toQString(fileIO.getInputFormatsStr())
+	);
+	if (filePathList.isEmpty()) return;
+
+	// Clear cache
+	// TODO: abstract a function
+	mycloud_vec.clear();
+	total_points = 0;
+	ui.dataTree->clear();
+	viewer->removeAllPointClouds();
+
+	doOpen(filePathList);
+}
+
+// Add Point Cloud
+void CloudViewer::add() {
+	QStringList filePathList = QFileDialog::getOpenFileNames(
+		this,
+		tr("Add point cloud file"),
+		toQString(mycloud.fileDir),
+		toQString(fileIO.getInputFormatsStr())
+	);
+	if (filePathList.isEmpty()) return;
+
+	doOpen(filePathList);
 }
 
 // Clear all point clouds
-void CloudViewer::clear()
-{
+void CloudViewer::clear() {
 	mycloud_vec.clear();  //从点云容器中移除所有点云
 	viewer->removeAllPointClouds();  //从viewer中移除所有点云
 	viewer->removeAllShapes(); //这个remove更彻底
@@ -306,123 +172,69 @@ void CloudViewer::clear()
 	showPointcloud();  //更新显示
 }
 
-
 // Save point cloud
-void CloudViewer::save()
-{
-	save_filename = QFileDialog::getSaveFileName(this, tr("Save point cloud"),
-		QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply);;Allfile(*.*)"));
-	std::string file_name = save_filename.toStdString();
-	std::string subname = getFileName(file_name);
-	//文件名为空直接返回
-	if (save_filename.isEmpty())
-		return;
-
-	if (mycloud_vec.size() > 1)
-	{
-		savemulti();
+void CloudViewer::save() {
+	if (!mycloud.isValid) {
+		QMessageBox::critical(this, tr("Saving file error"),
+			tr("There is no point cloud to save"));
 		return;
 	}
 
-	int status = -1;
-	if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))
-	{
-		status = pcl::io::savePCDFile(file_name, *(mycloud.cloud));
-	}
-	else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
-	{
-		status = pcl::io::savePLYFile(file_name, *(mycloud.cloud));
-	}
-	else //提示：无法保存为除了.ply .pcd以外的文件
-	{
-		QMessageBox::information(this, tr("File format error"),
-			tr("Can't save files except .ply .pcd"));
+	// get binary flag from sender()
+	QAction *action = qobject_cast<QAction *>(sender());
+	QVariant v = action->data();
+	bool isSaveBinary = (bool)v.value<bool>();
+
+	QString saveFilePath = QFileDialog::getSaveFileName(
+		this,                                    // parent
+		toQString("Save point cloud" + string(isSaveBinary ? " (binary)": "")), // caption
+		toQString(mycloud.filePath),             // dir
+		toQString(fileIO.getOutputFormatsStr()), // filter
+		&toQString(fileIO.outputFiltersMap.at(mycloud.fileSuffix)) // selected filter
+	);
+	if (saveFilePath.isEmpty()) return;
+
+	QFileInfo fileInfo(saveFilePath);
+	QString saveFileName = fileInfo.fileName();
+	string saveFilePathStd = fromQString(saveFilePath);
+	string saveFileNameStd = fromQString(saveFileName);
+
+	if (mycloud_vec.size() > 1) {
+		savemulti(fileInfo, isSaveBinary);
 		return;
 	}
-	//提示：后缀没问题，但是无法保存
-	if (status != 0)
-	{
+
+	bool saveStatus = fileIO.save(mycloud, fileInfo, isSaveBinary);
+	if (!saveStatus) {
 		QMessageBox::critical(this, tr("Saving file error"),
 			tr("We can not save the file"));
 		return;
 	}
 
-	//输出窗口
-	consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), save_filename, "Single save");
+	consoleLog("Save", saveFileName, saveFilePath, "Single save");
 
-	setWindowTitle(save_filename + " - CloudViewer");
+	setWindowTitle(saveFilePath + " - CloudViewer");
 	QMessageBox::information(this, tr("save point cloud file"),
-		QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
+		toQString("Save " + saveFileNameStd + " successfully!"));
 }
-
-// Save point cloud as binary file
-void CloudViewer::saveBinary()
-{
-	save_filename = QFileDialog::getSaveFileName(this, tr("Save point cloud as binary file"),
-		QString::fromLocal8Bit(mycloud.dirname.c_str()), tr("Point cloud data(*.pcd *.ply);;Allfile(*.*)"));
-	std::string file_name = save_filename.toStdString();
-	std::string subname = getFileName(file_name);
-	//文件名为空直接返回
-	if (save_filename.isEmpty())
-		return;
-
-	if (mycloud_vec.size() > 1)
-	{
-		savemulti();
-		return;
-	}
-
-	int status = -1;
-	if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))
-	{
-		status = pcl::io::savePCDFileBinary(file_name, *(mycloud.cloud));
-	}
-	else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
-	{
-		status = pcl::io::savePLYFileBinary(file_name, *(mycloud.cloud));
-	}
-	else //提示：无法保存为除了.ply .pcd以外的文件
-	{
-		QMessageBox::information(this, tr("File format error"),
-			tr("Can't save files except .ply .pcd"));
-		return;
-	}
-	//提示：后缀没问题，但是无法保存
-	if (status != 0)
-	{
-		QMessageBox::critical(this, tr("Saving file error"),
-			tr("We can not save the file"));
-		return;
-	}
-
-	//输出窗口
-	consoleLog("Save as binary", QString::fromLocal8Bit(subname.c_str()), save_filename, "Single save (binary)");
-
-	setWindowTitle(save_filename + " - CloudViewer");
-	QMessageBox::information(this, tr("save point cloud file"),
-		QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
-}
-
 
 // Save multi point cloud
-void CloudViewer::savemulti()
-{
-	std::string subname = getFileName(save_filename.toStdString());
+void CloudViewer::savemulti(const QFileInfo& fileInfo, bool isSaveBinary) {
+	string subname = fromQString(fileInfo.fileName());
+	QString saveFilePath = fileInfo.filePath();
 	PointCloudT::Ptr multi_cloud;
 	multi_cloud.reset(new PointCloudT);
 	multi_cloud->height = 1;
 	int sum = 0;
-	for (auto c : mycloud_vec)
-	{
+	for (auto c : mycloud_vec) {
 		sum += c.cloud->points.size();
 	}
 	multi_cloud->width = sum;
 	multi_cloud->resize(multi_cloud->height * multi_cloud->width);
 	int k = 0;
-	for (int i = 0; i != mycloud_vec.size(); i++)
-	{
-		for (int j = 0; j != mycloud_vec[i].cloud->points.size(); j++)          //注意cloudvec[i]->points.size()和cloudvec[i]->size()的区别
-		{
+	for (int i = 0; i != mycloud_vec.size(); ++i) {
+		// 注意cloudvec[i]->points.size()和cloudvec[i]->size()的区别
+		for (int j = 0; j != mycloud_vec[i].cloud->points.size(); ++j) {
 			multi_cloud->points[k].x = mycloud_vec[i].cloud->points[j].x;
 			multi_cloud->points[k].y = mycloud_vec[i].cloud->points[j].y;
 			multi_cloud->points[k].z = mycloud_vec[i].cloud->points[j].z;
@@ -432,77 +244,41 @@ void CloudViewer::savemulti()
 			k++;
 		}
 	}
-	//保存multi_cloud
-	int status = -1;
-	if (save_filename.endsWith(".pcd", Qt::CaseInsensitive))
-	{
-		if (save_as_binary){
-			status = pcl::io::savePCDFileBinary(save_filename.toStdString(), *multi_cloud);
-		}
-		else{
-			status = pcl::io::savePCDFile(save_filename.toStdString(), *multi_cloud);
-		}
-		
-	}
-	else if (save_filename.endsWith(".ply", Qt::CaseInsensitive))
-	{
-		if (save_as_binary){
-			status = pcl::io::savePLYFileBinary(save_filename.toStdString(), *multi_cloud);
-		}
-		else{
-			status = pcl::io::savePLYFile(save_filename.toStdString(), *multi_cloud);
-		}
-	}
-	else //提示：无法保存为除了.ply .pcd以外的文件
-	{
-		QMessageBox::information(this, tr("File format error"), tr("Can't save files except .ply .pcd"));
-		return;
-	}
 	
-	//提示：后缀没问题，但是无法保存
-	if (status != 0)
-	{
-		QMessageBox::critical(this, tr("Saving file error"), tr("We can not save the file"));
+	MyCloud multiMyCloud;
+	multiMyCloud.cloud = multi_cloud;
+	multiMyCloud.isValid = true;
+
+	// save multi_cloud
+	bool saveStatus = fileIO.save(multiMyCloud, fileInfo, isSaveBinary);
+	if (!saveStatus) {
+		QMessageBox::critical(this, tr("Saving file error"),
+			tr("We can not save the file"));
 		return;
 	}
 
-	// 输出窗口
-	if (save_as_binary){
-		consoleLog("Save as binary", QString::fromLocal8Bit(subname.c_str()), save_filename, "Multi save (binary)");
-	}
-	else{
-		consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), save_filename, "Multi save");
+	if (isSaveBinary) {
+		consoleLog("Save as binary", QString::fromLocal8Bit(subname.c_str()), saveFilePath, "Multi save (binary)");
+	} else {
+		consoleLog("Save", QString::fromLocal8Bit(subname.c_str()), saveFilePath, "Multi save");
 	}
 	
-
-	save_as_binary = false;
-	//将保存后的 multi_cloud 设置为当前 mycloud,以便保存之后直接进行操作
+	// 将保存后的 multi_cloud 设置为当前 mycloud,以便保存之后直接进行操作
 	mycloud.cloud = multi_cloud;
-	mycloud.filename = save_filename.toStdString();
-	mycloud.subname = subname;
+	mycloud.filePath = fromQString(saveFilePath);
+	mycloud.fileName = subname;
 
-	setWindowTitle(save_filename + " - CloudViewer");
-	QMessageBox::information(this, tr("save point cloud file"), QString::fromLocal8Bit(("Save " + subname + " successfully!").c_str()));
-}
-
-
-
-
-//格式转换
-void CloudViewer::change()
-{
-
+	setWindowTitle(saveFilePath + " - CloudViewer");
+	QMessageBox::information(this, tr("save point cloud file"), toQString("Save " + subname + " successfully!"));
 }
 
 //退出程序
-void CloudViewer::exit()
-{
+void CloudViewer::exit() {
 	this->close();
 }
 
 // Generate cube
-void CloudViewer::cube()
-{
+void CloudViewer::cube() {
 	mycloud.cloud.reset(new PointCloudT);
 	total_points = 0;
 	ui.dataTree->clear();  //清空资源管理器的item
@@ -535,8 +311,7 @@ void CloudViewer::cube()
 }
 
 //初始化
-void CloudViewer::initial()
-{
+void CloudViewer::initial() {
 	//界面初始化
 	setWindowIcon(QIcon(tr(":/Resources/images/icon.png")));
 	setWindowTitle(tr("CloudViewer"));
@@ -572,33 +347,28 @@ void CloudViewer::initial()
 }
 
 //显示点云，不重置相机角度
-void CloudViewer::showPointcloud()
-{
+void CloudViewer::showPointcloud() {
 	for (int i = 0; i != mycloud_vec.size(); i++)
 	{
-		viewer->updatePointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
+		viewer->updatePointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
 	}
 	//viewer->resetCamera();
 	ui.screen->update();
 }
 
 //添加点云到viewer,并显示点云
-void CloudViewer::showPointcloudAdd()
-{
-	for (int i = 0; i != mycloud_vec.size(); i++)
-	{
-		viewer->addPointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
-		viewer->updatePointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
+void CloudViewer::showPointcloudAdd() {
+	for (int i = 0; i != mycloud_vec.size(); i++) {
+		viewer->addPointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
+		viewer->updatePointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
 	}
 	viewer->resetCamera();
 	ui.screen->update();
 }
 
-void CloudViewer::setCloudColor(unsigned int r, unsigned int g, unsigned int b)
-{
+void CloudViewer::setCloudColor(unsigned int r, unsigned int g, unsigned int b) {
 	// Set the new color
-	for (size_t i = 0; i < mycloud.cloud->size(); i++)
-	{
+	for (size_t i = 0; i < mycloud.cloud->size(); i++) {
 		mycloud.cloud->points[i].r = r;
 		mycloud.cloud->points[i].g = g;
 		mycloud.cloud->points[i].b = b;
@@ -606,86 +376,22 @@ void CloudViewer::setCloudColor(unsigned int r, unsigned int g, unsigned int b)
 	}
 }
 
-void CloudViewer::setA(unsigned int a)
-{
-	for (size_t i = 0; i < mycloud.cloud->size(); i++)
-	{
-		mycloud.cloud->points[i].a = a;
-	}
-}
-
 //关于
-void CloudViewer::about()
-{
+void CloudViewer::about() {
 	AboutWin *aboutwin = new AboutWin(this);
 	aboutwin->setModal(true);
 	aboutwin->show();
-
-	// 输出窗口
 	consoleLog("About", "Nightn", "http://nightn.com", "Welcome to my blog!");
 }
 
 //帮助
-void CloudViewer::help()
-{
+void CloudViewer::help() {
 	QDesktopServices::openUrl(QUrl(QLatin1String("http://nightn.com/cloudviewer")));
-
-	// 输出窗口
 	consoleLog("Help", "Cloudviewer help", "http://nightn.com/cloudviewer", "");
-
-	//QMessageBox::information(this, "Help", "we are building help widget...");
-}
-
-
-//设置停靠窗口的显示与隐藏
-void CloudViewer::data()
-{
-	if (ui.dataAction->isChecked())
-	{
-		ui.dataDock->setVisible(true);
-	}
-	else
-	{
-		ui.dataDock->setVisible(false);
-	}
-}
-void CloudViewer::properties()
-{
-	if (ui.propertyAction->isChecked())
-	{
-		ui.propertyDock->setVisible(true);
-	}
-	else
-	{
-		ui.propertyDock->setVisible(false);
-	}
-}
-void CloudViewer::console()
-{
-	if (ui.consoleAction->isChecked())
-	{
-		ui.consoleDock->setVisible(true);
-	}
-	else
-	{
-		ui.consoleDock->setVisible(false);
-	}
-}
-void CloudViewer::rgbDock()
-{
-	if (ui.RGBAction->isChecked())
-	{
-		ui.RGBDock->setVisible(true);
-	}
-	else
-	{
-		ui.RGBDock->setVisible(false);
-	}
 }
 
 //绘制基本图形
-void CloudViewer::createSphere()
-{
+void CloudViewer::createSphere() {
 	mycloud.cloud.reset(new PointCloudT);
 	ui.dataTree->clear();  //清空资源管理器的item
 	viewer->removeAllShapes();
@@ -701,8 +407,8 @@ void CloudViewer::createSphere()
 	// 输出窗口
 	consoleLog("Create sphere", "Sphere", "", "Succeeded");
 }
-void CloudViewer::createCylinder()
-{
+
+void CloudViewer::createCylinder() {
 	mycloud.cloud.reset(new PointCloudT);
 	ui.dataTree->clear();  //清空资源管理器的item
 	viewer->removeAllShapes();
@@ -719,83 +425,65 @@ void CloudViewer::createCylinder()
 }
 
 // Change theme: Windows/Darcula
-void CloudViewer::windowsTheme(){
-	/*
-	QFile qssFile("Resources/qss/Windows.qss"); //资源文件":/Darcula.qss"
-	qssFile.open(QFile::ReadOnly);
-	if (qssFile.isOpen())
-	{
-	QString qss = QLatin1String(qssFile.readAll());
-	//consoleLog("", "", "", qss);
-	qApp->setStyleSheet(qss);
-	qssFile.close();
-	}
-	*/
-	QString qss = windows_qss;
-	qApp->setStyleSheet(qss);
+void CloudViewer::changeTheme() {
+	QAction *action = qobject_cast<QAction *>(sender());
+	QVariant v = action->data();
+	int theme = (int)v.value<int>();
 
-	//改变 dataTree 字体颜色，以适应主题的笨办法
-	QColor light_color(241, 241, 241, 255);
-	QColor dark_color(0, 0, 0, 255);
-	for (int i = 0; i != mycloud_vec.size(); i++){
-		if (ui.dataTree->topLevelItem(i)->textColor(0) == light_color){
-			ui.dataTree->topLevelItem(i)->setTextColor(0, dark_color);
+	QColor colorLight(241, 241, 241, 255);
+	QColor colorDark(0, 0, 0, 255);
+	QString qss;
+
+	switch (theme) {
+		case CLOUDVIEWER_THEME_WINDOWS: {
+			qss = windows_qss;
+			for (int i = 0; i != mycloud_vec.size(); i++){
+				if (ui.dataTree->topLevelItem(i)->textColor(0) == colorLight){
+					ui.dataTree->topLevelItem(i)->setTextColor(0, colorDark);
+				}
+			}
+			theme_id = 0;
+			consoleLog("Change theme", "Windows theme", "", "");
+			break;
+		}
+		case CLOUDVIEWER_THEME_DARCULA: {
+			qss = darcula_qss;
+			for (int i = 0; i != mycloud_vec.size(); i++){
+				if (ui.dataTree->topLevelItem(i)->textColor(0) == colorDark){
+					ui.dataTree->topLevelItem(i)->setTextColor(0, colorLight);
+				}
+			}
+			consoleLog("Change theme", "Darcula theme", "", "");
+			theme_id = 1;
+			break;
 		}
 	}
-
-	// 输出窗口
-	consoleLog("Change theme", "Windows theme", "", "");
-
-	theme_id = 0;
-}
-void CloudViewer::darculaTheme(){
-	/*
-	QFile qssFile("Resources/qss/Darcula.qss"); //资源文件":/Darcula.qss"
-	qssFile.open(QFile::ReadOnly);
-	if (qssFile.isOpen())
-	{
-	QString qss = QLatin1String(qssFile.readAll());
-	//cout << qss.toStdString();
-	consoleLog("", "", "", qss);
 	qApp->setStyleSheet(qss);
-	qssFile.close();
-	}
-	*/
-
-	QString qss = darcula_qss;
-	qApp->setStyleSheet(qss);
-
-	//改变 dataTree 字体颜色，以适应主题的笨办法
-	QColor light_color(241, 241, 241, 255);
-	QColor dark_color(0, 0, 0, 255);
-	for (int i = 0; i != mycloud_vec.size(); i++){
-		if (ui.dataTree->topLevelItem(i)->textColor(0) == dark_color){
-			ui.dataTree->topLevelItem(i)->setTextColor(0, light_color);
-		}
-	}
-
-	// 输出窗口
-	consoleLog("Change theme", "Darcula theme", "", "");
-
-	theme_id = 1;
 }
+
 // Change language: English/Chinese
-void CloudViewer::langEnglish(){
-	// 输出窗口
-	consoleLog("Change language", "English", "", "");
-}
-void CloudViewer::langChinese(){
-	// 输出窗口
-	consoleLog("Change language", "Chinese", "Doesn't support Chinese temporarily", "");
-}
+void CloudViewer::changeLanguage() {
+	QAction *action = qobject_cast<QAction *>(sender());
+	QVariant v = action->data();
+	int language = (int)v.value<int>();
 
+	switch (language) {
+		case CLOUDVIEWER_LANG_ENGLISH: {
+			consoleLog("Change language", "English", "", "");
+			break;
+		}
+		case CLOUDVIEWER_LANG_CHINESE: {
+			consoleLog("Change language", "Chinese", "Doesn't support Chinese temporarily", "");
+			break;
+		}
+	}
+}
 
 
 /*********************************************/
 /*****************界面槽函数*****************/
 /********************************************/
-void CloudViewer::colorBtnPressed()
-{
+void CloudViewer::colorBtnPressed() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	int selected_item_count = ui.dataTree->selectedItems().size();
 	// 如果未选中任何点云，则对视图窗口中的所有点云进行着色
@@ -828,31 +516,22 @@ void CloudViewer::colorBtnPressed()
 	showPointcloud();
 }
 
-void CloudViewer::RGBsliderReleased()
-{
+void CloudViewer::RGBsliderReleased() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	int selected_item_count = ui.dataTree->selectedItems().size();
 	// 如果未选中任何点云，则对视图窗口中的所有点云进行着色
-	if (selected_item_count == 0){
-		for (int i = 0; i != mycloud_vec.size(); i++){
-			for (int j = 0; j != mycloud_vec[i].cloud->points.size(); j++){
-				mycloud_vec[i].cloud->points[j].r = red;
-				mycloud_vec[i].cloud->points[j].g = green;
-				mycloud_vec[i].cloud->points[j].b = blue;
-			}
+	if (selected_item_count == 0) {
+		for (int i = 0; i != mycloud_vec.size(); i++) {
+			mycloud_vec[i].setPointColor(red, green, blue);
 		}
 
 		// 输出窗口
 		consoleLog("Change cloud color", "All point clouds", QString::number(red) + " " + QString::number(green) + " " + QString::number(blue), "");
 	}
 	else{
-		for (int i = 0; i != selected_item_count; i++){
+		for (int i = 0; i != selected_item_count; i++) {
 			int cloud_id = ui.dataTree->indexOfTopLevelItem(itemList[i]);
-			for (int j = 0; j != mycloud_vec[cloud_id].cloud->size(); j++){
-				mycloud_vec[cloud_id].cloud->points[j].r = red;
-				mycloud_vec[cloud_id].cloud->points[j].g = green;
-				mycloud_vec[cloud_id].cloud->points[j].b = blue;
-			}
+			mycloud_vec[cloud_id].setPointColor(red, green, blue);
 		}
 		// 输出窗口
 		consoleLog("Change cloud color", "Point clouds selected", QString::number(red) + " " + QString::number(green) + " " + QString::number(blue), "");
@@ -861,14 +540,13 @@ void CloudViewer::RGBsliderReleased()
 }
 
 //设置所有点云的尺寸
-void CloudViewer::psliderReleased()
-{
+void CloudViewer::psliderReleased() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	int selected_item_count = ui.dataTree->selectedItems().size();
 	if (selected_item_count == 0){
 		for (int i = 0; i != mycloud_vec.size(); i++){
 			viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-				p, "cloud" + QString::number(i).toStdString());
+				p, mycloud_vec[i].cloudId);
 		}
 		// 输出窗口
 		consoleLog("Change cloud size", "All point clouds", "Size: " + QString::number(p), "");
@@ -877,104 +555,88 @@ void CloudViewer::psliderReleased()
 		for (int i = 0; i != selected_item_count; i++){
 			int cloud_id = ui.dataTree->indexOfTopLevelItem(itemList[i]);
 			viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-				p, "cloud" + QString::number(cloud_id).toStdString());
+				p, mycloud_vec[i].cloudId);
 		}
 		// 输出窗口
 		consoleLog("Change cloud size", "Point clouds selected", "Size: " + QString::number(p), "");
 	}
 	ui.screen->update();
 }
-void CloudViewer::pSliderChanged(int value)
-{
+
+void CloudViewer::pSliderChanged(int value) {
 	p = value;
 	ui.sizeLCD->display(value);
 
 }
-void CloudViewer::rSliderChanged(int value)
-{
+
+void CloudViewer::rSliderChanged(int value) {
 	red = value;
 	ui.rLCD->display(value);
 }
-void CloudViewer::gSliderChanged(int value)
-{
+
+void CloudViewer::gSliderChanged(int value) {
 	green = value;
 	ui.gLCD->display(value);
 }
-void CloudViewer::bSliderChanged(int value)
-{
+
+void CloudViewer::bSliderChanged(int value) {
 	blue = value;
 	ui.bLCD->display(value);
 }
 
-void CloudViewer::cooCbxChecked(int value)
-{
-	switch (value)
-	{
-	case 0:
-		viewer->removeCoordinateSystem();  //移除坐标系
-		// 输出窗口
-		consoleLog("Remove coordinate system", "Remove", "", "");
-		break;
-	case 2:
-		viewer->addCoordinateSystem();  //添加坐标系
-		// 输出窗口
-		consoleLog("Add coordinate system", "Add", "", "");
-		break;
+void CloudViewer::cooCbxChecked(int value) {
+	switch (value) {
+		case 0: {
+			viewer->removeCoordinateSystem();
+			consoleLog("Remove coordinate system", "Remove", "", "");
+			break;
+		}
+		case 2: {
+			viewer->addCoordinateSystem();
+			consoleLog("Add coordinate system", "Add", "", "");
+			break;
+		}
 	}
-	//viewer->updatePointCloud(cloud, "cloud");
-	ui.screen->update();
-}
-void CloudViewer::bgcCbxChecked(int value)
-{
-	switch (value)
-	{
-	case 0:
-		viewer->setBackgroundColor(30 / 255.0, 30 / 255.0, 30 / 255.0);
-		// 输出窗口
-		consoleLog("Change bg color", "Background", "30 30 30", "");
-		break;
-	case 2:
-		//！注意：setBackgroundColor()接收的是0-1的double型参数
-		viewer->setBackgroundColor(240 / 255.0, 240 / 255.0, 240 / 255.0);
-		// 输出窗口
-		consoleLog("Change bg color", "Background", "240 240 240", "");
-		break;
-	}
-	//viewer->updatePointCloud(cloud, "cloud");
 	ui.screen->update();
 }
 
+void CloudViewer::bgcCbxChecked(int value) {
+	switch (value) {
+		case 0: {
+			viewer->setBackgroundColor(30 / 255.0, 30 / 255.0, 30 / 255.0);
+			consoleLog("Change bg color", "Background", "30 30 30", "");
+			break;
+		}
+		case 2: {
+			//！注意：setBackgroundColor()接收的是0-1的double型参数
+			viewer->setBackgroundColor(240 / 255.0, 240 / 255.0, 240 / 255.0);
+			consoleLog("Change bg color", "Background", "240 240 240", "");
+			break;
+		}
+	}
+	ui.screen->update();
+}
 
-//通过颜色对话框改变点云颜色
-void CloudViewer::pointcolorChanged()
-{
+// 通过颜色对话框改变点云颜色
+void CloudViewer::pointcolorChanged() {
 	QColor color = QColorDialog::getColor(Qt::white, this, "Select color for point cloud");
 
-	if (color.isValid()) //判断所选的颜色是否有效
-	{
+	if (color.isValid()) {
 		//QAction* action = dynamic_cast<QAction*>(sender());
 		//if (action != ui.pointcolorAction) //改变颜色的信号来自于 dataTree
 		QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 		int selected_item_count = ui.dataTree->selectedItems().size();
-		if (selected_item_count == 0){
-			for (int i = 0; i != mycloud_vec.size(); i++){
-				for (int j = 0; j != mycloud_vec[i].cloud->points.size(); j++){
-					mycloud_vec[i].cloud->points[j].r = color.red();
-					mycloud_vec[i].cloud->points[j].g = color.green();
-					mycloud_vec[i].cloud->points[j].b = color.blue();
-				}
+		if (selected_item_count == 0) {
+			for (int i = 0; i != mycloud_vec.size(); ++i) {
+				mycloud_vec[i].setPointColor(color.red(), color.green(), color.blue());
 			}
 			// 输出窗口
 			consoleLog("Change cloud color", "All point clouds", QString::number(color.red()) + " " + QString::number(color.green()) + " " + QString::number(color.blue()), "");
 		}
-		else{
-			for (int i = 0; i != selected_item_count; i++){
+		else {
+			for (int i = 0; i != selected_item_count; i++) {
 				int cloud_id = ui.dataTree->indexOfTopLevelItem(itemList[i]);
-				for (int j = 0; j != mycloud_vec[cloud_id].cloud->size(); j++){
-					mycloud_vec[cloud_id].cloud->points[j].r = color.red();
-					mycloud_vec[cloud_id].cloud->points[j].g = color.green();
-					mycloud_vec[cloud_id].cloud->points[j].b = color.blue();
-				}
+				mycloud_vec[cloud_id].setPointColor(color.red(), color.green(), color.blue());
 			}
 			// 输出窗口
 			consoleLog("Change cloud color", "Point clouds selected", QString::number(color.red()) + " " + QString::number(color.green()) + " " + QString::number(color.blue()), "");
@@ -989,12 +651,10 @@ void CloudViewer::pointcolorChanged()
 }
 
 //通过颜色对话框改变背景颜色
-void CloudViewer::bgcolorChanged()
-{
+void CloudViewer::bgcolorChanged() {
 	QColor color = QColorDialog::getColor(Qt::white, this,
 		"Select color for point cloud");
-	if (color.isValid())
-	{
+	if (color.isValid()) {
 		viewer->setBackgroundColor(color.red() / 255.0,
 			color.green() / 255.0, color.blue() / 255.0);
 		// 输出窗口
@@ -1004,45 +664,47 @@ void CloudViewer::bgcolorChanged()
 }
 
 //三视图
-void CloudViewer::mainview()
-{
+void CloudViewer::mainview() {
 	viewer->setCameraPosition(0, -1, 0, 0.5, 0.5, 0.5, 0, 0, 1);
 	ui.screen->update();
 }
-void CloudViewer::leftview()
-{
+
+void CloudViewer::leftview() {
 	viewer->setCameraPosition(-1, 0, 0, 0, 0, 0, 0, 0, 1);
 	ui.screen->update();
 }
-void CloudViewer::topview()
-{
+
+void CloudViewer::topview() {
 	viewer->setCameraPosition(0, 0, 1, 0, 0, 0, 0, 1, 0);
 	ui.screen->update();
 }
 
-//设置属性管理窗口
-void CloudViewer::setPropertyTable(){
-
+// 设置属性管理窗口
+void CloudViewer::setPropertyTable() {
 	QStringList header;
 	header << "Property" << "Value";
 	ui.propertyTable->setHorizontalHeaderLabels(header);
 	ui.propertyTable->setItem(0, 0, new QTableWidgetItem("Clouds"));
-	ui.propertyTable->setItem(1, 0, new QTableWidgetItem("Points"));
-	ui.propertyTable->setItem(2, 0, new QTableWidgetItem("Total points"));
-	ui.propertyTable->setItem(3, 0, new QTableWidgetItem("RGB"));
-
-
 	ui.propertyTable->setItem(0, 1, new QTableWidgetItem(QString::number(mycloud_vec.size())));
+
+	ui.propertyTable->setItem(1, 0, new QTableWidgetItem("Points"));
 	ui.propertyTable->setItem(1, 1, new QTableWidgetItem(""));
-	ui.propertyTable->setItem(2, 1, new QTableWidgetItem(QString::number(total_points)));
+
+	ui.propertyTable->setItem(2, 0, new QTableWidgetItem("Faces"));
+	ui.propertyTable->setItem(2, 1, new QTableWidgetItem(""));
+
+	ui.propertyTable->setItem(3, 0, new QTableWidgetItem("Total points"));
+	ui.propertyTable->setItem(3, 1, new QTableWidgetItem(QString::number(total_points)));
+
+	ui.propertyTable->setItem(4, 0, new QTableWidgetItem("RGB"));
 	ui.propertyTable->setItem(4, 1, new QTableWidgetItem(""));
 
 }
 
-void CloudViewer::setConsoleTable(){
+void CloudViewer::setConsoleTable() {
 	// 设置输出窗口
 	QStringList header2;
-	header2 << "Time" << "Operation" << "Operation obeject" << "Details" << "Note";
+	header2 << "Time" << "Operation" << "Operation object" << "Details" << "Note";
 	ui.consoleTable->setHorizontalHeaderLabels(header2);
 	ui.consoleTable->setColumnWidth(0, 150);
 	ui.consoleTable->setColumnWidth(1, 200);
@@ -1056,10 +718,8 @@ void CloudViewer::setConsoleTable(){
 
 }
 
-//
-void CloudViewer::consoleLog(QString operation, QString subname, QString filename, QString note)
-{
-	if (enable_console == false){
+void CloudViewer::consoleLog(QString operation, QString subname, QString filename, QString note) {
+	if (enable_console == false) {
 		return;
 	}
 	int rows = ui.consoleTable->rowCount();
@@ -1075,16 +735,14 @@ void CloudViewer::consoleLog(QString operation, QString subname, QString filenam
 	ui.consoleTable->scrollToBottom(); // 滑动自动滚到最底部
 }
 
-
 //QTreeWidget的item的点击相应函数
-void CloudViewer::itemSelected(QTreeWidgetItem* item, int count)
-{
+void CloudViewer::itemSelected(QTreeWidgetItem* item, int count) {
 	count = ui.dataTree->indexOfTopLevelItem(item);  //获取item的行号
 
 	for (int i = 0; i != mycloud_vec.size(); i++)
 	{
-		viewer->updatePointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
-		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud" + QString::number(i).toStdString());
+		viewer->updatePointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
+		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, mycloud_vec[i].cloudId);
 	}
 
 	//提取当前点云的RGB,点云数量等信息
@@ -1098,8 +756,10 @@ void CloudViewer::itemSelected(QTreeWidgetItem* item, int count)
 
 	ui.propertyTable->setItem(0, 1, new QTableWidgetItem(QString::number(mycloud_vec.size())));
 	ui.propertyTable->setItem(1, 1, new QTableWidgetItem(QString::number(cloud_size)));
-	ui.propertyTable->setItem(2, 1, new QTableWidgetItem(QString::number(total_points)));
-	ui.propertyTable->setItem(3, 1, new QTableWidgetItem(multi_color ? "Multi Color" : (QString::number(cloud_r) + " " + QString::number(cloud_g) + " " + QString::number(cloud_b))));
+	int faces = mycloud_vec[count].meshId.size() != 0 ? mycloud_vec[count].mesh->polygons.size() : 0;
+	ui.propertyTable->setItem(2, 1, new QTableWidgetItem(QString::number(faces)));
+	ui.propertyTable->setItem(3, 1, new QTableWidgetItem(QString::number(total_points)));
+	ui.propertyTable->setItem(4, 1, new QTableWidgetItem(multi_color ? "Multi Color" : (QString::number(cloud_r) + " " + QString::number(cloud_g) + " " + QString::number(cloud_b))));
 
 	//选中item所对应的点云尺寸变大
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
@@ -1107,14 +767,14 @@ void CloudViewer::itemSelected(QTreeWidgetItem* item, int count)
 	for (int i = 0; i != selected_item_count; i++){
 		int cloud_id = ui.dataTree->indexOfTopLevelItem(itemList[i]);
 		viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE,
-			2, "cloud" + QString::number(cloud_id).toStdString());
+			2, mycloud_vec[i].cloudId);
 	}
 	//mycloud = mycloud_vec[count];
 	ui.screen->update();
 }
 
 // consoleTable 右击响应事件
-void CloudViewer::popMenuInConsole(const QPoint&){
+void CloudViewer::popMenuInConsole(const QPoint&) {
 	QAction clearConsoleAction("Clear console", this);
 	QAction enableConsoleAction("Enable console", this);
 	QAction disableConsoleAction("Disable console", this);
@@ -1140,40 +800,67 @@ void CloudViewer::popMenuInConsole(const QPoint&){
 
 	menu.exec(QCursor::pos()); //在当前鼠标位置显示
 }
+
 // 清空 consoleTable
-void CloudViewer::clearConsole(){
+void CloudViewer::clearConsole() {
 	ui.consoleTable->clearContents();
 	ui.consoleTable->setRowCount(0);
 }
+
 // 允许使用 consoleTable
-void CloudViewer::enableConsole(){
+void CloudViewer::enableConsole() {
 	enable_console = true;
 }
+
 // 禁用 consoleTable
-void CloudViewer::disableConsole(){
+void CloudViewer::disableConsole() {
 	clearConsole();
 	enable_console = false;
 
 }
 
 //QTreeWidget的item的右击响应函数
-void CloudViewer::popMenu(const QPoint&)
-{
+void CloudViewer::popMenu(const QPoint&) {
 	QTreeWidgetItem* curItem = ui.dataTree->currentItem(); //获取当前被点击的节点
 	if (curItem == NULL)return;           //这种情况是右键的位置不在treeItem的范围内，即在空白位置右击
 	QString name = curItem->text(0);
 	int id = ui.dataTree->indexOfTopLevelItem(curItem);
-	string cloud_id = "cloud" + QString::number(id).toStdString();
+	MyCloud& myCloud = mycloud_vec[id];
 
 	QAction hideItemAction("Hide", this);
 	QAction showItemAction("Show", this);
 	QAction deleteItemAction("Delete", this);
 	QAction changeColorAction("Change color", this);
+	// show mode
+	QAction pointModeAction("Set point mode", this);
+	QAction meshModeAction("Set mesh mode", this);
+	QAction pointMeshModeAction("Set point+mesh mode", this);
+	pointModeAction.setData(QVariant(CLOUDVIEWER_MODE_POINT));
+	meshModeAction.setData(QVariant(CLOUDVIEWER_MODE_MESH));
+	pointMeshModeAction.setData(QVariant(CLOUDVIEWER_MODE_POINT_MESH));
 
+	pointModeAction.setCheckable(true);
+	meshModeAction.setCheckable(true);
+	pointMeshModeAction.setCheckable(true);
+
+	if (myCloud.curMode == "point") {
+		pointModeAction.setChecked(true);
+	}
+	else if (myCloud.curMode == "mesh") {
+		meshModeAction.setChecked(true);
+	}
+	else if (myCloud.curMode == "point+mesh") {
+		pointMeshModeAction.setChecked(true);
+	}
+	
 	connect(&hideItemAction, &QAction::triggered, this, &CloudViewer::hideItem);
 	connect(&showItemAction, &QAction::triggered, this, &CloudViewer::showItem);
 	connect(&deleteItemAction, &QAction::triggered, this, &CloudViewer::deleteItem);
 	connect(&changeColorAction, &QAction::triggered, this, &CloudViewer::pointcolorChanged);
+
+	connect(&pointModeAction, SIGNAL(triggered()), this, SLOT(setRenderingMode()));
+	connect(&meshModeAction, SIGNAL(triggered()), this, SLOT(setRenderingMode()));
+	connect(&pointMeshModeAction, SIGNAL(triggered()), this, SLOT(setRenderingMode()));
 
 	QPoint pos;
 	QMenu menu(ui.dataTree);
@@ -1181,6 +868,10 @@ void CloudViewer::popMenu(const QPoint&)
 	menu.addAction(&showItemAction);
 	menu.addAction(&deleteItemAction);
 	menu.addAction(&changeColorAction);
+	
+	menu.addAction(&pointModeAction);
+	menu.addAction(&meshModeAction);
+	menu.addAction(&pointMeshModeAction);
 
 	if (mycloud_vec[id].visible == true){
 		menu.actions()[1]->setVisible(false);
@@ -1191,11 +882,20 @@ void CloudViewer::popMenu(const QPoint&)
 		menu.actions()[0]->setVisible(false);
 	}
 
+	const vector<string> modes = myCloud.supportedModes;
+	if (std::find(modes.begin(), modes.end(), "point") == modes.end()) {
+		menu.actions()[4]->setVisible(false);
+	}
+	if (std::find(modes.begin(), modes.end(), "mesh") == modes.end()) {
+		menu.actions()[5]->setVisible(false);
+	}
+	if (std::find(modes.begin(), modes.end(), "point+mesh") == modes.end()) {
+		menu.actions()[6]->setVisible(false);
+	}
 
 	menu.exec(QCursor::pos()); //在当前鼠标位置显示
 }
-void CloudViewer::hideItem()
-{
+void CloudViewer::hideItem() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	for (int i = 0; i != ui.dataTree->selectedItems().size(); i++){
 		//TODO hide之后，item变成灰色，再次右击item时，“hideItem” 选项变成 “showItem”
@@ -1203,10 +903,9 @@ void CloudViewer::hideItem()
 		QTreeWidgetItem* curItem = itemList[i];
 		QString name = curItem->text(0);
 		int id = ui.dataTree->indexOfTopLevelItem(curItem);
-		string cloud_id = "cloud" + QString::number(id).toStdString();
+		mycloud_vec[id].hide();
 		//QMessageBox::information(this, "cloud_id", QString::fromLocal8Bit(cloud_id.c_str()));
-		// 将cloud_id所对应的点云设置成透明
-		viewer->setPointCloudRenderingProperties(pcl::visualization::RenderingProperties::PCL_VISUALIZER_OPACITY, 0.0, cloud_id, 0);
+
 		QColor item_color = QColor(112, 122, 132, 255);
 		curItem->setTextColor(0, item_color);
 		mycloud_vec[id].visible = false;
@@ -1218,17 +917,15 @@ void CloudViewer::hideItem()
 	ui.screen->update(); //刷新视图窗口，不能省略
 }
 
-void CloudViewer::showItem()
-{
+void CloudViewer::showItem() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	for (int i = 0; i != ui.dataTree->selectedItems().size(); i++){
 		//QTreeWidgetItem* curItem = ui.dataTree->currentItem();
 		QTreeWidgetItem* curItem = itemList[i];
 		QString name = curItem->text(0);
 		int id = ui.dataTree->indexOfTopLevelItem(curItem);
-		string cloud_id = "cloud" + QString::number(id).toStdString();
 		// 将cloud_id所对应的点云设置成透明
-		viewer->setPointCloudRenderingProperties(pcl::visualization::RenderingProperties::PCL_VISUALIZER_OPACITY, 1.0, cloud_id, 0);
+		mycloud_vec[id].show();
 		QColor item_color;
 		if (theme_id == 0){
 			item_color = QColor(0, 0, 0, 255);
@@ -1247,8 +944,7 @@ void CloudViewer::showItem()
 
 }
 
-void CloudViewer::deleteItem()
-{
+void CloudViewer::deleteItem() {
 	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
 	// ui.dataTree->selectedItems().size() 随着迭代次数而改变，因此循环条件要设置为固定大小的 selected_item_count
 	int selected_item_count = ui.dataTree->selectedItems().size();
@@ -1275,8 +971,8 @@ void CloudViewer::deleteItem()
 	viewer->removeAllPointClouds();
 	for (int i = 0; i != mycloud_vec.size(); i++)
 	{
-		viewer->addPointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
-		viewer->updatePointCloud(mycloud_vec[i].cloud, "cloud" + QString::number(i).toStdString());
+		viewer->addPointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
+		viewer->updatePointCloud(mycloud_vec[i].cloud, mycloud_vec[i].cloudId);
 	}
 
 	// 输出窗口
@@ -1286,252 +982,93 @@ void CloudViewer::deleteItem()
 
 }
 
+void CloudViewer::setRenderingMode() {
+	QAction *action = qobject_cast<QAction *>(sender());
+	QVariant v = action->data();
+	int mode = (int)v.value<int>();
+	string modeStr;
 
-//法线估计、曲面重建、网格面片显示
-int CloudViewer::convertSurface()
-{
-	/* 问题
-	好像该方法只能处理PointXYZ的点云，用PointXZYRGBA的点云编译会报错
-	调用boost::this_thread::sleep好像也会编译出错
-	*/
+	switch (mode) {
+		case CLOUDVIEWER_MODE_POINT: {
+			modeStr = "point";
+			consoleLog("Point Mode", "Point clouds selected", "", "");
+			break;
+		}
+		case CLOUDVIEWER_MODE_MESH: {
+			modeStr = "mesh";
+			consoleLog("Mesh Mode", "Point clouds selected", "", "");
+			break;
+		}
+		case CLOUDVIEWER_MODE_POINT_MESH: {
+			modeStr = "point+mesh";
+			consoleLog("Point+Mesh Mode", "Point clouds selected", "", "");
+			break;
+		}
+	}
+
+	QList<QTreeWidgetItem*> itemList = ui.dataTree->selectedItems();
+	for (int i = 0; i != ui.dataTree->selectedItems().size(); i++) {
+		QTreeWidgetItem* curItem = itemList[i];
+		QString name = curItem->text(0);
+		int id = ui.dataTree->indexOfTopLevelItem(curItem);
+		MyCloud& myCloud = mycloud_vec[id];
+		myCloud.setShowMode(modeStr);
+	}
+	ui.screen->update();
+}
+
+int CloudViewer::convertSurface() {
 	pcl::PointXYZ point;
-	cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-	for (size_t i = 0; i < mycloud.cloud->size(); i++)
-	{
+	xyzCloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+	for (size_t i = 0; i < mycloud.cloud->size(); i++) {
 		point.x = mycloud.cloud->points[i].x;
 		point.y = mycloud.cloud->points[i].y;
 		point.z = mycloud.cloud->points[i].z;
-		cloud_xyz->push_back(point);
+		xyzCloud->push_back(point);
 	}
-	if (!cloud_xyz)
-	{
+	if (!xyzCloud) {
 		return -1;
 	}
 
-	/****** 法向估计模块 ******/
-	//创建法线估计对象 n
-	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-	//创建法向数据指针 normals
-	pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-	//创建 kdtree 用于法向计算时近邻搜索
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-	tree->setInputCloud(cloud_xyz); //为 kdtree 输入点云
-	n.setInputCloud(cloud_xyz); //为法向估计对象输入点云
-	n.setSearchMethod(tree);  //设置法向估计时所采取的搜索方式为kdtree
-	n.setKSearch(20); //设置法向估计时，k近邻搜索的点数
-	n.compute(*normals); //进行法向估计
+	pcl::PolygonMesh mesh = triangulationGreedyProjection(xyzCloud);
+	viewer->addPolygonMesh(mesh, "mesh-greedy-projection");
+	viewer->setRepresentationToSurfaceForAllActors();
 
-	QMessageBox::information(this, "information", "Normal estimation finished");
-
-	/****** 点云数据与法向数据拼接 ******/
-	//从这之后出现问题
-
-	//创建同时包含点和法线的数据结构的指针
-	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-
-	//将已获得的点数据和法向数据拼接
-	pcl::concatenateFields(*cloud_xyz, *normals, *cloud_with_normals); //这里编译出错，与cloud的类型有关？改成PointXYZ的点云就没有报错了
-
-	//创建另一个kdtree用于重建
-	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
-	//为kdtree输入点云数据，该点云数据类型为点和法向
-	tree2->setInputCloud(cloud_with_normals);
-
-	/****** 曲面重建模块 ******/
-	//创建贪婪三角形投影重建对象
-	pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-	//创建多边形网格对象，用来存储重建结果
-	pcl::PolygonMesh triangles;
-	//设置参数
-	gp3.setSearchRadius(25); //设置连接点之间最大距离，用于确定k近邻的球半径
-	gp3.setMu(2.5); //设置最近邻距离的乘子，以得到每个点的最终搜索半径
-	gp3.setMaximumNearestNeighbors(100); //设置搜索的最近邻点的最大数量
-	gp3.setMaximumSurfaceAngle(M_PI / 2); //45度 最大平面角
-	gp3.setMinimumAngle(M_PI / 18); //10度 每个三角的最大角度？
-	gp3.setMaximumAngle(2 * M_PI / 3); //120度
-	gp3.setNormalConsistency(false); //若法向量一致，设为true
-	//设置点云数据和搜索方式
-	gp3.setInputCloud(cloud_with_normals);
-	gp3.setSearchMethod(tree2);
-	// 开始重建
-	gp3.reconstruct(triangles);
-	QMessageBox::information(this, "informaiton", "Reconstruction finished");
-
-	/****** 图形显示模块 ******/
-	QMessageBox::information(this, "informaiton", "Start to show");
-	viewer->addPolygonMesh(triangles, "my"); //设置要显示的网格对象
-	//设置网格模型显示模式
-	viewer->setRepresentationToSurfaceForAllActors(); //网格模型以面片形式显示
-	//viewer->setRepresentationToPointsForAllActors(); //网格模型以点形式显示
-	//viewer->setRepresentationToWireframeForAllActors(); //网格模型以线框图模式显示
-
-	// 输出窗口
 	consoleLog("Convert surface", "", "", "");
 
 	viewer->removeAllShapes();
-	while (!viewer->wasStopped())
-	{
+	while (!viewer->wasStopped()) {
 		viewer->spinOnce(100);
-		//boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 	}
 	return 0;
-
 }
 
-int CloudViewer::convertWireframe()
-{
-	/* 问题
-	好像该方法只能处理PointXYZ的点云，用PointXZYRGBA的点云编译会报错
-	调用boost::this_thread::sleep好像也会编译出错
-	*/
+int CloudViewer::convertWireframe() {
 	pcl::PointXYZ point;
-	cloud_xyz.reset(new pcl::PointCloud<pcl::PointXYZ>);
-	for (size_t i = 0; i < mycloud.cloud->size(); i++)
-	{
+	xyzCloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
+	for (size_t i = 0; i < mycloud.cloud->size(); i++) {
 		point.x = mycloud.cloud->points[i].x;
 		point.y = mycloud.cloud->points[i].y;
 		point.z = mycloud.cloud->points[i].z;
-		cloud_xyz->push_back(point);
+		xyzCloud->push_back(point);
 	}
-	if (!cloud_xyz)
-	{
+	if (!xyzCloud) {
 		return -1;
 	}
 
+	pcl::PolygonMesh mesh = triangulationGreedyProjection(xyzCloud);
+	viewer->addPolygonMesh(mesh, "mesh-greedy-projection");
+	viewer->setRepresentationToWireframeForAllActors();
 
-	/****** 法向估计模块 ******/
-	//创建法线估计对象 n
-	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
-	//创建法向数据指针 normals
-	pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-	//创建 kdtree 用于法向计算时近邻搜索
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-	tree->setInputCloud(cloud_xyz); //为 kdtree 输入点云
-	n.setInputCloud(cloud_xyz); //为法向估计对象输入点云
-	n.setSearchMethod(tree);  //设置法向估计时所采取的搜索方式为kdtree
-	n.setKSearch(20); //设置法向估计时，k近邻搜索的点数
-	n.compute(*normals); //进行法向估计
-
-	QMessageBox::information(this, "information", "Normal estimation finished");
-
-	/****** 点云数据与法向数据拼接 ******/
-	//从这之后出现问题
-
-	//创建同时包含点和法线的数据结构的指针
-	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals(new pcl::PointCloud<pcl::PointNormal>);
-
-	//将已获得的点数据和法向数据拼接
-	pcl::concatenateFields(*cloud_xyz, *normals, *cloud_with_normals); //这里编译出错，与cloud的类型有关？改成PointXYZ的点云就没有报错了
-
-	//创建另一个kdtree用于重建
-	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
-	//为kdtree输入点云数据，该点云数据类型为点和法向
-	tree2->setInputCloud(cloud_with_normals);
-
-
-
-	/****** 曲面重建模块 ******/
-	//创建贪婪三角形投影重建对象
-	pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-	//创建多边形网格对象，用来存储重建结果
-	pcl::PolygonMesh triangles;
-	//设置参数
-	gp3.setSearchRadius(25); //设置连接点之间最大距离，用于确定k近邻的球半径
-	gp3.setMu(2.5); //设置最近邻距离的乘子，以得到每个点的最终搜索半径
-	gp3.setMaximumNearestNeighbors(100); //设置搜索的最近邻点的最大数量
-	gp3.setMaximumSurfaceAngle(M_PI / 2); //45度 最大平面角
-	gp3.setMinimumAngle(M_PI / 18); //10度 每个三角的最大角度？
-	gp3.setMaximumAngle(2 * M_PI / 3); //120度
-	gp3.setNormalConsistency(false); //若法向量一致，设为true
-	//设置点云数据和搜索方式
-	gp3.setInputCloud(cloud_with_normals);
-	gp3.setSearchMethod(tree2);
-	// 开始重建
-	gp3.reconstruct(triangles);
-	QMessageBox::information(this, "informaiton", "Reconstruction finished");
-
-	/****** 图形显示模块 ******/
-	QMessageBox::information(this, "informaiton", "Start to show");
-	viewer->addPolygonMesh(triangles, "my"); //设置要显示的网格对象
-	//设置网格模型显示模式
-	//viewer->setRepresentationToSurfaceForAllActors(); //网格模型以面片形式显示
-	//viewer->setRepresentationToPointsForAllActors(); //网格模型以点形式显示
-	viewer->setRepresentationToWireframeForAllActors(); //网格模型以线框图模式显示
-
-	// 输出窗口
-	consoleLog("Convert wireframe", "", "", "");
+	consoleLog("Convert wire frame", "", "", "");
 
 	viewer->removeAllShapes();
-	while (!viewer->wasStopped())
-	{
+	while (!viewer->wasStopped()) {
 		viewer->spinOnce(100);
-		//boost::this_thread::sleep(boost::posix_time::microseconds(100000));
 	}
 	return 0;
-
 }
 
-
-void CloudViewer::bilateralFilter()
-{
-
-}
-
-void CloudViewer::rotatePointCloud()
-{
-	Eigen::Vector3f point(85.910275, -5.189175, 858.973925);
-	Eigen::Vector3f vector(0.11238, -0.97236, -0.20464);
-	float t = -90 * 3.1415926 / 180;
-
-	float u = vector(0);
-	float v = vector(1);
-	float w = vector(2);
-	float a = point(0);
-	float b = point(1);
-	float c = point(2);
-
-	Eigen::Matrix4f matrix;
-	matrix << u*u + (v*v + w*w)*cos(t), u*v*(1 - cos(t)) - w*sin(t), u*w*(1 - cos(t)) + v*sin(t), (a*(v*v + w*w) - u*(b*v + c*w))*(1 - cos(t)) + (b*w - c*v)*sin(t),
-		u*v*(1 - cos(t)) + w*sin(t), v*v + (u*u + w*w)*cos(t), v*w*(1 - cos(t)) - u*sin(t), (b*(u*u + w*w) - v*(a*u + c*w))*(1 - cos(t)) + (c*u - a*w)*sin(t),
-		u*w*(1 - cos(t)) - v*sin(t), v*w*(1 - cos(t)) + u*sin(t), w*w + (u*u + v*v)*cos(t), (c*(u*u + v*v) - w*(a*u + b*v))*(1 - cos(t)) + (a*v - b*u)*sin(t),
-		0, 0, 0, 1;
-
-	float m11 = matrix(0, 0);
-	float m12 = matrix(0, 1);
-	float m13 = matrix(0, 2);
-	float m14 = matrix(0, 3);
-
-	float m21 = matrix(1, 0);
-	float m22 = matrix(1, 1);
-	float m23 = matrix(1, 2);
-	float m24 = matrix(1, 3);
-
-	float m31 = matrix(2, 0);
-	float m32 = matrix(2, 1);
-	float m33 = matrix(2, 2);
-	float m34 = matrix(2, 3);
-
-	consoleLog("RotateMatrix",
-			QString::number(m11) + ", " + QString::number(m12) + ", " + QString::number(m13) + ", " + QString::number(m14),
-			QString::number(m21) + ", " + QString::number(m22) + ", " + QString::number(m23) + ", " + QString::number(m24),
-			QString::number(m31) + ", " + QString::number(m32) + ", " + QString::number(m33) + ", " + QString::number(m34));
-
-
-	for (size_t i = 0; i < mycloud.cloud->size(); i++)
-	{
-		float x = mycloud.cloud->points[i].x;
-		float y = mycloud.cloud->points[i].y;
-		float z = mycloud.cloud->points[i].z;
-
-		float x_new = m11 * x + m12 * y + m13 * z + m14;
-		float y_new = m21 * x + m22 * y + m23 * z + m24;
-		float z_new = m31 * x + m32 * y + m33 * z + m34;
-
-		mycloud.cloud->points[i].x = x_new;
-		mycloud.cloud->points[i].y = y_new;
-		mycloud.cloud->points[i].z = z_new;
-	}
-
-	ui.screen->update();
-
+void CloudViewer::debug(const string& s) {
+	QMessageBox::information(this, tr("Debug"), QString::fromLocal8Bit(s.c_str()));
 }

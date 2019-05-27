@@ -52,7 +52,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_5">
     <item>
-     <widget class="QVTKWidget" name="screen" native="true">
+     <widget class="QVTKWidget" name="screen">
       <property name="minimumSize">
        <size>
         <width>600</width>
@@ -86,7 +86,6 @@
     <addaction name="clearAction"/>
     <addaction name="saveAction"/>
     <addaction name="saveBinaryAction"/>
-    <addaction name="changeAction"/>
     <addaction name="exitAction"/>
    </widget>
    <widget class="QMenu" name="menuGenerate">
@@ -159,39 +158,15 @@
     <addaction name="bgcolorAction"/>
     <addaction name="menuAngle_view"/>
    </widget>
-   <widget class="QMenu" name="menuView_2">
-    <property name="title">
-     <string>View</string>
-    </property>
-    <addaction name="dataAction"/>
-    <addaction name="propertyAction"/>
-    <addaction name="consoleAction"/>
-    <addaction name="RGBAction"/>
-   </widget>
    <widget class="QMenu" name="menuProcess">
     <property name="title">
      <string>Process</string>
     </property>
-    <widget class="QMenu" name="menuFilter">
-     <property name="title">
-      <string>Filter</string>
-     </property>
-     <addaction name="actionBilateralFilter"/>
-    </widget>
-    <widget class="QMenu" name="menuRotate">
-     <property name="title">
-      <string>Rotate</string>
-     </property>
-     <addaction name="actionRotate90"/>
-    </widget>
     <addaction name="meshsurfaceAction"/>
     <addaction name="wireframeAction"/>
-    <addaction name="menuFilter"/>
-    <addaction name="menuRotate"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
-   <addaction name="menuView_2"/>
    <addaction name="menuGenerate"/>
    <addaction name="menuProcess"/>
    <addaction name="menuOption"/>
@@ -209,7 +184,6 @@
    <addaction name="clearAction"/>
    <addaction name="saveAction"/>
    <addaction name="saveBinaryAction"/>
-   <addaction name="changeAction"/>
    <addaction name="separator"/>
    <addaction name="pointcolorAction"/>
    <addaction name="bgcolorAction"/>

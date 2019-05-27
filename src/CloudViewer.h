@@ -18,12 +18,7 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/common/common.h>
 #include <pcl/ModelCoefficients.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/search/kdtree.h>
-#include <pcl/surface/gp3.h>
 #include <pcl/PolygonMesh.h>
-
-#include <Eigen/Dense>
 
 #include <QtWidgets/QMainWindow>
 #include "GBK.h"
@@ -31,8 +26,11 @@
 #include "AboutWin.h"
 #include "Tools.h"
 #include "MeshProcessing.h"
+#include "FileIO.h"
 
 #include <vector>
+#include <map>
+#include <algorithm>
 #include <QtWidgets/QMainWindow>
 #include <QString>
 #include <QDebug>
@@ -58,6 +56,20 @@
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
 
+const int CLOUDVIEWER_THEME_WINDOWS = 0;
+const int CLOUDVIEWER_THEME_DARCULA = 1;
+
+const int CLOUDVIEWER_LANG_ENGLISH = 0;
+const int CLOUDVIEWER_LANG_CHINESE = 1;
+
+const int CLOUDVIEWER_MODE_POINT = 0;
+const int CLOUDVIEWER_MODE_MESH = 1;
+const int CLOUDVIEWER_MODE_POINT_MESH = 2;
+
+
+using std::vector;
+using std::string;
+using std::map;
 
 class CloudViewer : public QMainWindow
 {
@@ -70,10 +82,12 @@ public:
 private:
 	Ui::CloudViewerClass ui;
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud;
 	MyCloud mycloud;
 	std::vector<MyCloud> mycloud_vec;
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+
+	FileIO fileIO;
 
 	QString save_filename;
 	long total_points = 0; //Total amount of points in the viewer
@@ -89,18 +103,16 @@ private:
 
 	int theme_id = 1; // 0: Windows theme, 1: Darcula theme
 	bool enable_console = true; // console 的可用状态
-	bool save_as_binary = false;
-	QString time_cost = "0";  // 记录某个动作执行的时间
+	QString timeCostSecond = "0";  // 记录某个动作执行的时间
 
 	/***** Slots of QMenuBar and QToolBar *****/
 	// File menu slots
 	void open();
 	void add();
+	void doOpen(const QStringList& filePathList);
 	void clear();
-	void save();
-	void saveBinary();
-	void savemulti();
-	void change();
+	
+	void savemulti(const QFileInfo& fileInfo, bool isSaveBinary);
 	void exit();
 	// Display menu slots
 	void pointcolorChanged();
@@ -108,11 +120,6 @@ private:
 	void mainview();
 	void leftview();
 	void topview();
-	// View menu slots
-	void data();
-	void properties();
-	void console();
-	void rgbDock();
 	// Generate menu slots
 	void cube();
 	void createSphere();
@@ -121,15 +128,6 @@ private:
 	int convertSurface();  //法线估计、曲面重建、网格面片显示
 	int convertWireframe(); //法线估计、曲面重建、网格线框显示
 
-	void bilateralFilter();  // 点云双边滤波
-
-	void rotatePointCloud();  // 点云旋转（测试）
-
-	// Option menu slots
-	void windowsTheme();
-	void darculaTheme();
-	void langEnglish();
-	void langChinese();
 	// About menu slots
 	void about();
 	void help();
@@ -140,16 +138,17 @@ private:
 	void showPointcloudAdd();  //添加给viewer，显示点云
 
 	void setCloudColor(unsigned int r, unsigned int g, unsigned int b);
-	void setA(unsigned int a);
 
 	void setPropertyTable();
 	void setConsoleTable();
 
 	void consoleLog(QString operation, QString subname, QString filename, QString note);
 
-	public slots:
-	/***** Slots of RGB widget *****/
-	// Change color or size of cloud when slider is released or colorBtn is pressed
+public slots:
+	void save();
+	void changeTheme();
+	void changeLanguage();
+
 	void colorBtnPressed();
 	void RGBsliderReleased();
 	void psliderReleased();
@@ -170,10 +169,15 @@ private:
 	void showItem();
 	void deleteItem();
 
+	// set show mode
+	void setRenderingMode();
+
 	void popMenuInConsole(const QPoint&);
 	void clearConsole();
 	void enableConsole();
 	void disableConsole();
+
+	void debug(const string& s);
 };
 
 #endif // CLOUDVIEWER_H

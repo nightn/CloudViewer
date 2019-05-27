@@ -1,5 +1,10 @@
 #include "MeshProcessing.h"
 #include <pcl/Vertices.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/surface/gp3.h>
+#include <pcl/PolygonMesh.h>
 #include <vector>
 
 
@@ -60,4 +65,41 @@ double calculatePCLPolygonMeshArea(const pcl::PolygonMesh& mesh) {
 		area += polygonArea;
 	}
 	return area;
+}
+
+// Greedy Projection triangulation
+pcl::PolygonMesh triangulationGreedyProjection(pcl::PointCloud<pcl::PointXYZ>::Ptr xyzCloud) {
+	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
+	pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+	tree->setInputCloud(xyzCloud);
+	normalEstimation.setInputCloud(xyzCloud);
+	normalEstimation.setSearchMethod(tree);
+	normalEstimation.setKSearch(20);
+	normalEstimation.compute(*normals);
+
+	pcl::PointCloud<pcl::PointNormal>::Ptr cloudWithNormals(new pcl::PointCloud<pcl::PointNormal>);
+	// 将已获得的点数据和法向数据拼接
+	pcl::concatenateFields(*xyzCloud, *normals, *cloudWithNormals);
+
+	// another kd-tree for reconstruction
+	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
+	tree2->setInputCloud(cloudWithNormals);
+
+	// reconstruction
+	pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
+	pcl::PolygonMesh mesh;
+	// options
+	gp3.setSearchRadius(25);
+	gp3.setMu(2.5);
+	gp3.setMaximumNearestNeighbors(100);
+	gp3.setMaximumSurfaceAngle(M_PI / 2);
+	gp3.setMinimumAngle(M_PI / 18);
+	gp3.setMaximumAngle(2 * M_PI / 3);
+	gp3.setNormalConsistency(false);
+	gp3.setInputCloud(cloudWithNormals);
+	gp3.setSearchMethod(tree2);
+	gp3.reconstruct(mesh);
+
+	return mesh;
 }
