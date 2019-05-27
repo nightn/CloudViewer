@@ -33,8 +33,8 @@ public:
     bool saveSTL(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBinaryFormat);
     bool saveVTK(const MyCloud& myCloud, const QFileInfo& fileInfo, bool isBinaryFormat);
 
-    string FileIO::getInputFormatsStr() const;
-    string FileIO::getOutputFormatsStr() const;
+    string getInputFormatsStr() const;
+    string getOutputFormatsStr() const;
 
     map<string, string> inputFiltersMap = {
         {"ply", "Stanford Polygon File Format (*.ply)"},

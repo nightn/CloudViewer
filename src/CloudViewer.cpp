@@ -185,12 +185,13 @@ void CloudViewer::save() {
 	QVariant v = action->data();
 	bool isSaveBinary = (bool)v.value<bool>();
 
+	QString selectedFilter = toQString(fileIO.outputFiltersMap.at(mycloud.fileSuffix));
 	QString saveFilePath = QFileDialog::getSaveFileName(
 		this,                                    // parent
 		toQString("Save point cloud" + string(isSaveBinary ? " (binary)": "")), // caption
 		toQString(mycloud.filePath),             // dir
 		toQString(fileIO.getOutputFormatsStr()), // filter
-		&toQString(fileIO.outputFiltersMap.at(mycloud.fileSuffix)) // selected filter
+		&selectedFilter                          // selected filter
 	);
 	if (saveFilePath.isEmpty()) return;
 
