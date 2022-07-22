@@ -40,7 +40,7 @@ sudo chmod a+x ./qt-opensource-linux-x64-5.10.1.run
 
 将会弹出图形安装界面，勾选必要的组件，完成安装。
 
-<img  src="http://nightn.com/cloudviewer/img2/linux-qt-install-component.png" width="400" />
+<img  src="http://nightn.github.io/cloudviewer/img2/linux-qt-install-component.png" width="400" />
 
 ### 环境变量配置
 
@@ -53,7 +53,7 @@ export PATH="/home/nightn/Qt5.10.1/5.10.1/gcc_64/bin:$PATH"
 
 如下图所示：
 
-<img src="http://nightn.com/cloudviewer/img2/linux-qt-env.png" width="500" />
+<img src="http://nightn.github.io/cloudviewer/img2/linux-qt-env.png" width="500" />
 
 ## CloudViewer编译运行
 
@@ -84,4 +84,4 @@ make
 
 运行结果：
 
-<img src="http://nightn.com/cloudviewer/img2/linux-cloudviewer.png" width="600" />
+<img src="http://nightn.github.io/cloudviewer/img2/linux-cloudviewer.png" width="600" />

@@ -382,13 +382,13 @@ void CloudViewer::about() {
 	AboutWin *aboutwin = new AboutWin(this);
 	aboutwin->setModal(true);
 	aboutwin->show();
-	consoleLog("About", "Nightn", "http://nightn.com", "Welcome to my blog!");
+	consoleLog("About", "Nightn", "http://nightn.github.io", "Welcome to my blog!");
 }
 
 //帮助
 void CloudViewer::help() {
-	QDesktopServices::openUrl(QUrl(QLatin1String("http://nightn.com/cloudviewer")));
-	consoleLog("Help", "Cloudviewer help", "http://nightn.com/cloudviewer", "");
+	QDesktopServices::openUrl(QUrl(QLatin1String("http://nightn.github.io/cloudviewer")));
+	consoleLog("Help", "Cloudviewer help", "http://nightn.github.io/cloudviewer", "");
 }
 
 //绘制基本图形
