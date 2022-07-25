@@ -1,12 +1,13 @@
 #include "AboutWin.h"
 
 AboutWin::AboutWin(QWidget *parent)
-	: QDialog(parent)
+  : QDialog(parent)
 {
-	ui.setupUi(this);
+  ui.setupUi(this);
 }
 
 AboutWin::~AboutWin()
 {
 
 }
+

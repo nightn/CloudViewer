@@ -66,7 +66,7 @@ git clone https://github.com/nightn/CloudViewer.git
 使用 cmake 配置和生成。
 
 ```shell
-cmake -H. -Bbuild
+cmake -H. -Bbuild -DCMAKE_EXPORT_COMPILE_COMMANDS=on
 ```
 
 使用 make 构建。

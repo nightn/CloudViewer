@@ -8,14 +8,14 @@
 
 class AboutWin : public QDialog
 {
-	Q_OBJECT
+  Q_OBJECT
 
 public:
-	AboutWin(QWidget *parent = 0);
-	~AboutWin();
+  AboutWin(QWidget *parent = 0);
+  ~AboutWin();
 
 private:
-	Ui::AboutWin ui;
+  Ui::AboutWin ui;
 };
-
 #endif // ABOUTWIN_H
+
